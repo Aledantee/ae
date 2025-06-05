@@ -151,6 +151,7 @@ func (e *ErrorBuilder) Build() *Error {
 // - Cause() error: Adds the cause as a cause
 // - syscall.Errno: Sets the exit code to the error number
 func From(err error) *ErrorBuilder {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if x, ok := err.(*Error); ok {
 		return (*ErrorBuilder)(x.Clone())
 	}
@@ -166,6 +167,7 @@ func From(err error) *ErrorBuilder {
 	if x, ok := err.(interface{ Cause() error }); ok {
 		eb = eb.Cause(x.Cause())
 	}
+	//goland:noinspection GoTypeAssertionOnErrors
 	if x, ok := err.(syscall.Errno); ok {
 		eb = eb.ExitCode(int(x))
 	}
