@@ -1,8 +1,11 @@
 package ae
 
 import (
+	"context"
 	"fmt"
 	"syscall"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ErrorBuilder is a builder type for constructing Error instances.
@@ -82,15 +85,33 @@ func (e *ErrorBuilder) ExitCode(code int) *ErrorBuilder {
 	return e
 }
 
+func (e *ErrorBuilder) TraceId(traceId string) *ErrorBuilder {
+	if e.traceId != "" {
+		e.traceId = traceId
+	}
+	return e
+}
+
+func (e *ErrorBuilder) SpanId(spanId string) *ErrorBuilder {
+	if e.spanId != "" {
+		e.spanId = spanId
+	}
+	return e
+}
+
 // Tag adds a tag to categorize or filter the error.
-func (e *ErrorBuilder) Tag(tag string) *ErrorBuilder {
-	e.tags[tag] = struct{}{}
+func (e *ErrorBuilder) Tag(tags ...string) *ErrorBuilder {
+	for _, t := range tags {
+		e.tags[t] = struct{}{}
+	}
 	return e
 }
 
 // Attr sets a single attribute with the given key and value.
 func (e *ErrorBuilder) Attr(key string, value any) *ErrorBuilder {
-	e.attrs[key] = value
+	if key != "" {
+		e.attrs[key] = value
+	}
 	return e
 }
 
@@ -114,27 +135,71 @@ func (e *ErrorBuilder) Attrs(kv ...any) *ErrorBuilder {
 			key = fmt.Sprintf("%v", x)
 		}
 
-		e.attrs[key] = kv[i+1]
+		if key != "" {
+			e.attrs[key] = kv[i+1]
+		}
 	}
 
 	return e
 }
 
+func (e *ErrorBuilder) AttrsMap(m map[string]any) *ErrorBuilder {
+	for k, v := range m {
+		if k != "" {
+			e.attrs[k] = v
+		}
+	}
+	return e
+}
+
 // Cause adds one or more errors as direct causes of this error.
 func (e *ErrorBuilder) Cause(errs ...error) *ErrorBuilder {
-	e.causes = append(e.causes, errs...)
+	for _, err := range errs {
+		if err != nil {
+			e.causes = append(e.causes, err)
+		}
+	}
 	return e
 }
 
 // Related adds one or more errors that are related to this error.
 func (e *ErrorBuilder) Related(errs ...error) *ErrorBuilder {
-	e.relatedErrs = append(e.relatedErrs, errs...)
+	for _, err := range errs {
+		if err != nil {
+			e.relatedErrs = append(e.relatedErrs, err)
+		}
+	}
 	return e
 }
 
-// Recovery adds one or more errors that occurred while handling this error.
-func (e *ErrorBuilder) Recovery(errs ...error) *ErrorBuilder {
-	e.recoveryErrs = append(e.recoveryErrs, errs...)
+// Context adds tracing information and context values from the provided context.
+// It extracts the trace ID and span ID if available in the context.
+// For each key provided, it adds the corresponding value from the context as an attribute.
+// Keys can be strings, fmt.Stringer implementations, or any other type that can be converted to a string. Empty keys are ignored.
+func (e *ErrorBuilder) Context(ctx context.Context, keys ...any) *ErrorBuilder {
+	sp := trace.SpanContextFromContext(ctx)
+	if sp.IsValid() {
+		e.traceId = sp.TraceID().String()
+		e.spanId = sp.SpanID().String()
+	}
+
+	for _, k := range keys {
+		var key string
+
+		switch x := k.(type) {
+		case string:
+			key = x
+		case fmt.Stringer:
+			key = x.String()
+		default:
+			key = fmt.Sprintf("%v", x)
+		}
+
+		if key != "" {
+			e.Attr(key, ctx.Value(k))
+		}
+	}
+
 	return e
 }
 
@@ -144,12 +209,6 @@ func (e *ErrorBuilder) Build() *Error {
 }
 
 // From creates a new ErrorBuilder from an existing error.
-// It handles various error types and interfaces:
-// - *Error: Creates a builder based on the error
-// - Unwrap() []error: Adds unwrapped errors as causes
-// - Unwrap() error: Adds the unwrapped error as a cause
-// - Cause() error: Adds the cause as a cause
-// - syscall.Errno: Sets the exit code to the error number
 func From(err error) *ErrorBuilder {
 	//goland:noinspection GoTypeAssertionOnErrors
 	if x, ok := err.(*Error); ok {
@@ -158,15 +217,55 @@ func From(err error) *ErrorBuilder {
 
 	eb := New(err.Error())
 
-	if x, ok := err.(interface{ Unwrap() []error }); ok {
-		eb = eb.Cause(x.Unwrap()...)
+	if x, ok := err.(ErrorMessage); ok {
+		eb = eb.Msg(x.Message())
 	}
-	if x, ok := err.(interface{ Unwrap() error }); ok {
-		eb = eb.Cause(x.Unwrap())
+	if x, ok := err.(ErrorUserMessage); ok {
+		eb = eb.Public(x.UserMessage())
 	}
-	if x, ok := err.(interface{ Cause() error }); ok {
-		eb = eb.Cause(x.Cause())
+	if x, ok := err.(ErrorHint); ok {
+		eb = eb.Hint(x.Hint())
 	}
+	if x, ok := err.(ErrorCode); ok {
+		eb = eb.Code(x.Code())
+	}
+	if x, ok := err.(ErrorExitCode); ok {
+		eb = eb.ExitCode(x.ExitCode())
+	}
+	if x, ok := err.(ErrorTraceId); ok {
+		eb = eb.TraceId(x.TraceId())
+	}
+	if x, ok := err.(ErrorSpanId); ok {
+		eb = eb.SpanId(x.SpanId())
+	}
+	if x, ok := err.(ErrorTags); ok {
+		eb = eb.Tag(x.Tags()...)
+	}
+	if x, ok := err.(ErrorAttributes); ok {
+		eb = eb.AttrsMap(x.Attributes())
+	}
+
+	if x, ok := err.(ErrorRelated); ok {
+		eb = eb.Related(x.Related()...)
+	}
+
+	// Prefer ErrorCauses over other interfaces, since it's more specific, but support all common interfaces for
+	// compatibility with other packages.
+	if x, ok := err.(ErrorCauses); ok {
+		eb = eb.Cause(x.Causes()...)
+	} else {
+		if x, ok := err.(interface{ Unwrap() []error }); ok {
+			eb = eb.Cause(x.Unwrap()...)
+		}
+		if x, ok := err.(interface{ Unwrap() error }); ok {
+			eb = eb.Cause(x.Unwrap())
+		}
+		if x, ok := err.(interface{ Cause() error }); ok {
+			eb = eb.Cause(x.Cause())
+		}
+	}
+
+	// If the error is a syscall.Errno, use its value as the exit code.
 	//goland:noinspection GoTypeAssertionOnErrors
 	if x, ok := err.(syscall.Errno); ok {
 		eb = eb.ExitCode(int(x))
