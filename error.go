@@ -87,11 +87,6 @@ func (e *Error) SpanId() string {
 	return e.spanId
 }
 
-// ParentSpanId returns the ID that links to the parent operation in a trace.
-func (e *Error) ParentSpanId() string {
-	return e.parentSpanId
-}
-
 // Tags returns a slice of strings containing all tags associated with this error.
 func (e *Error) Tags() []string {
 	return slices.Collect(maps.Keys(e.tags))
@@ -117,19 +112,17 @@ func (e *Error) Related() []error {
 // of the original error.
 func (e *Error) Clone() *Error {
 	return &Error{
-		msg:          e.msg,
-		pubMsg:       e.pubMsg,
-		hint:         e.hint,
-		code:         e.code,
-		exitCode:     e.exitCode,
-		traceId:      e.traceId,
-		spanId:       e.spanId,
-		parentSpanId: e.parentSpanId,
-		tags:         maps.Clone(e.tags),
-		attrs:        maps.Clone(e.attrs),
-		causes:       slices.Clone(e.causes),
-		relatedErrs:  slices.Clone(e.relatedErrs),
-		recoveryErrs: slices.Clone(e.recoveryErrs),
+		msg:         e.msg,
+		pubMsg:      e.pubMsg,
+		hint:        e.hint,
+		code:        e.code,
+		exitCode:    e.exitCode,
+		traceId:     e.traceId,
+		spanId:      e.spanId,
+		tags:        maps.Clone(e.tags),
+		attrs:       maps.Clone(e.attrs),
+		causes:      slices.Clone(e.causes),
+		relatedErrs: slices.Clone(e.relatedErrs),
 	}
 }
 

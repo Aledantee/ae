@@ -249,7 +249,7 @@ func From(err error) *ErrorBuilder {
 		eb = eb.Related(x.Related()...)
 	}
 
-	// Prefer ErrorCauses over other interfaces, since it's more specific, but support all common interfaces for
+	// Prefer ErrorCauses over other interfaces since it's more specific, but support all common interfaces for
 	// compatibility with other packages.
 	if x, ok := err.(ErrorCauses); ok {
 		eb = eb.Cause(x.Causes()...)
