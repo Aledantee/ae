@@ -1,5 +1,7 @@
 package ae
 
+import "time"
+
 // ErrorMessage defines an interface for errors that can provide a message.
 type ErrorMessage interface {
 	// Message returns the error message.
@@ -18,6 +20,13 @@ type ErrorHint interface {
 	// Hint returns a hint for resolving the error.
 	// Returns an empty string if no hint is set.
 	Hint() string
+}
+
+// ErrorTimestamp defines an interface for errors that can provide a timestamp.
+type ErrorTimestamp interface {
+	// Timestamp returns the timestamp of the error.
+	// Returns zero time if no timestamp is set.
+	Timestamp() time.Time
 }
 
 // ErrorCode defines an interface for errors that can provide an error code.
@@ -77,4 +86,11 @@ type ErrorRelated interface {
 	// May also include errors that occurred during the handling of the cause(s).
 	// Returns nil if no related errors are set.
 	Related() []error
+}
+
+// ErrorStacks defines an interface for errors that can provide a list of stack traces.
+type ErrorStacks interface {
+	// Stacks returns a list of stack traces associated with the error, one for each goroutine.
+	// Returns nil if no stack traces are set.
+	Stacks() []*Stack
 }

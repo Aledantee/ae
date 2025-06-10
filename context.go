@@ -8,12 +8,8 @@ type errorBuilderKey struct{}
 // WithError stores an ErrorBuilder in the context.
 // If the builder is nil, the original context is returned unchanged.
 // This allows propagating error context through the call stack.
-func WithError(ctx context.Context, builder *ErrorBuilder) context.Context {
-	if builder != nil {
-		return context.WithValue(ctx, errorBuilderKey{}, builder)
-	}
-
-	return ctx
+func WithError(ctx context.Context, builder Builder) context.Context {
+	return context.WithValue(ctx, errorBuilderKey{}, builder)
 }
 
 // FromContext retrieves an ErrorBuilder from the context.
@@ -21,11 +17,13 @@ func WithError(ctx context.Context, builder *ErrorBuilder) context.Context {
 // Otherwise, a new ErrorBuilder is created with the provided message
 // and initialized with context values using the Context() method.
 // Panics if the message is empty.
-func FromContext(ctx context.Context, msg string) *ErrorBuilder {
+func FromContext(ctx context.Context, msg string) Builder {
 	v := ctx.Value(errorBuilderKey{})
-	if eb, ok := v.(*ErrorBuilder); ok && eb != nil {
+	if eb, ok := v.(Builder); ok {
 		return eb
 	}
 
-	return New(msg).Context(ctx)
+	return Builder{
+		msg: msg,
+	}.Context(ctx)
 }
