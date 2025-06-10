@@ -35,8 +35,6 @@ type Ae struct {
 	// attributes provide additional context-specific information about the error
 	attributes map[string]any
 
-	// joined indicates whether this error represents a collection of joined errors
-	joined bool
 	// causes contains the underlying errors that led to this error
 	causes []error
 	// related contains errors that are related to this error, but not a direct cause
@@ -45,13 +43,6 @@ type Ae struct {
 
 	// stacks contains the stack traces associated with this error
 	stacks []*Stack
-}
-
-// New creates a new error with the given message.
-// The error will have a timestamp set to the current time and will implement
-// all the error interfaces defined in the ae package.
-func New(msg string) error {
-	return newInternal(msg)
 }
 
 // Message returns the internal error message.
@@ -102,11 +93,6 @@ func (a *Ae) Tags() []string {
 // Attributes returns a copy of the error's attributes map.
 func (a *Ae) Attributes() map[string]any {
 	return maps.Clone(a.attributes)
-}
-
-// IsJoined returns true if this error represents a collection of joined errors.
-func (a *Ae) IsJoined() bool {
-	return a.joined
 }
 
 // Causes returns a copy of the underlying errors that caused this error.

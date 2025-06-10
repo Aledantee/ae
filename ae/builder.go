@@ -12,11 +12,12 @@ import (
 // Builder is a builder for Ae errors with a fluent interface.
 type Builder Ae
 
-// Msg sets the error message and returns the final error.
-// This is the terminal operation that completes the builder chain.
-func (b Builder) Msg(msg string) error {
-	b.msg = msg
-	return (*Ae)(&b)
+// New creates and returns a new instance of Builder.
+func New() Builder {
+	return Builder{
+		tags:       make(map[string]struct{}),
+		attributes: make(map[string]any),
+	}
 }
 
 // UserMsg sets a user-friendly message for the error.
@@ -100,7 +101,16 @@ func (b Builder) Attrs(attrs map[string]any) Builder {
 
 // Cause adds one or more underlying causes to the error.
 func (b Builder) Cause(causes ...error) Builder {
-	b.causes = append(b.causes, causes...)
+	return b.Causes(causes)
+}
+
+func (b Builder) Causes(causes []error) Builder {
+	for _, cause := range causes {
+		if cause != nil {
+			b.causes = append(b.causes, cause)
+		}
+	}
+
 	return b
 }
 
@@ -114,6 +124,13 @@ func (b Builder) Related(related ...error) Builder {
 func (b Builder) Stack() Builder {
 	b.stacks = newStack()
 	return b
+}
+
+// Msg sets the error message and returns the final error.
+// This is the terminal operation that completes the builder chain.
+func (b Builder) Msg(msg string) error {
+	b.msg = msg
+	return (*Ae)(&b)
 }
 
 // Context extracts OpenTelemetry trace information and context values into the error.

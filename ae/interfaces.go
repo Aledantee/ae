@@ -78,19 +78,6 @@ type ErrorCauses interface {
 	Causes() []error
 }
 
-// ErrorJoined defines an interface for errors that represent a collection of independent errors joined together.
-// Unlike wrapped errors where one error contains another, joined errors treat all causes as peers.
-// A joined error typically does not have its own message, hint, code, or exit code - it serves as a container
-// for multiple independent errors that occurred in parallel or are otherwise related but not causally linked.
-type ErrorJoined interface {
-	ErrorCauses
-
-	// IsJoined returns true if this error represents a collection of joined errors.
-	// Returns false if this is a single error or if the error was not created through joining.
-	// This can be used to distinguish between errors that wrap causes and those that join them.
-	IsJoined() bool
-}
-
 // ErrorRelated defines an interface for errors that can provide a list of related errors.
 // Related errors are those that are not direct causes but are somehow connected to the error,
 // including errors that occurred during the handling of the cause(s).
