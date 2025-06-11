@@ -26,6 +26,11 @@ func From(err error) Builder {
 		return New()
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
+	if x, ok := err.(*Ae); ok {
+		return (Builder)(*x.clone())
+	}
+
 	b := New()
 
 	if x, ok := err.(ErrorMessage); ok {

@@ -153,13 +153,15 @@ func (a *Ae) Prints(opts ...PrinterOption) string {
 	return NewPrinter(opts...).Prints(a)
 }
 
-// newInternal creates a new Ae error with the given message.
-// It initializes the error with the current timestamp and empty maps for tags and attributes.
-func newInternal(msg string) *Ae {
-	return &Ae{
-		msg:        msg,
-		timestamp:  time.Now(),
-		tags:       make(map[string]struct{}),
-		attributes: make(map[string]any),
-	}
+// clone creates and returns a deep copy of the Ae instance and its associated fields.
+func (a *Ae) clone() *Ae {
+	b := *a
+
+	b.tags = maps.Clone(a.tags)
+	b.attributes = maps.Clone(a.attributes)
+	b.causes = slices.Clone(a.causes)
+	b.related = slices.Clone(a.related)
+	b.stacks = slices.Clone(a.stacks)
+
+	return &b
 }
