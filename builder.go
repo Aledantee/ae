@@ -20,6 +20,60 @@ func New() Builder {
 	}
 }
 
+// From creates and returns a new instance of Builder based on the given error.
+func From(err error) Builder {
+	if err == nil {
+		return New()
+	}
+
+	b := New()
+
+	if x, ok := err.(ErrorMessage); ok {
+		b.msg = x.Message()
+	}
+	if x, ok := err.(ErrorUserMessage); ok {
+		b.userMsg = x.UserMessage()
+	}
+	if x, ok := err.(ErrorTraceId); ok {
+		b.traceId = x.TraceId()
+	}
+	if x, ok := err.(ErrorSpanId); ok {
+		b.spanId = x.SpanId()
+	}
+	if x, ok := err.(ErrorTags); ok {
+		b.tags = make(map[string]struct{})
+		for _, tag := range x.Tags() {
+			b.tags[tag] = struct{}{}
+		}
+	}
+	if x, ok := err.(ErrorCode); ok {
+		b.code = x.Code()
+	}
+	if x, ok := err.(ErrorAttributes); ok {
+		b.attributes = x.Attributes()
+	}
+	if x, ok := err.(ErrorExitCode); ok {
+		b.exitCode = x.ExitCode()
+	}
+	if x, ok := err.(ErrorHint); ok {
+		b.hint = x.Hint()
+	}
+	if x, ok := err.(ErrorRelated); ok {
+		b.related = x.Related()
+	}
+	if x, ok := err.(ErrorCauses); ok {
+		b.causes = x.Causes()
+	}
+	if x, ok := err.(ErrorTimestamp); ok {
+		b.timestamp = x.Timestamp()
+	}
+	if x, ok := err.(ErrorStacks); ok {
+		b.stacks = x.Stacks()
+	}
+
+	return b
+}
+
 // Hint sets a hint message that may help resolve the error.
 func (b Builder) Hint(hint string) Builder {
 	b.hint = hint
