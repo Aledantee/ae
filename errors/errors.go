@@ -4,7 +4,7 @@ import (
 	stdErrors "errors"
 	"strings"
 
-	"github.com/aledantee/ae/ae"
+	"github.com/aledantee/ae"
 )
 
 // New creates a new ae.Ae error with the given message.

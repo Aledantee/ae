@@ -234,7 +234,6 @@ func WithoutAttributes() PrinterOption {
 // trace IDs, span IDs, tags, attributes, causes, related errors, and stack traces.
 func WithVerbose() PrinterOption {
 	return withChained(
-		WithUserMessage(),
 		WithHint(),
 		WithTimestamp(),
 		WithCode(),

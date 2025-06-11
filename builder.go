@@ -20,12 +20,6 @@ func New() Builder {
 	}
 }
 
-// UserMsg sets a user-friendly message for the error.
-func (b Builder) UserMsg(userMsg string) Builder {
-	b.userMsg = userMsg
-	return b
-}
-
 // Hint sets a hint message that may help resolve the error.
 func (b Builder) Hint(hint string) Builder {
 	b.hint = hint
@@ -127,10 +121,17 @@ func (b Builder) Stack() Builder {
 }
 
 // Msg sets the error message and returns the final error.
-// This is the terminal operation that completes the builder chain.
+// This is a terminal operation that completes the builder chain.
 func (b Builder) Msg(msg string) error {
 	b.msg = msg
 	return (*Ae)(&b)
+}
+
+// UserMsg sets the error message and a user message. Then, it returns the final error.
+// This is a terminal operation that completes the builder chain.
+func (b Builder) UserMsg(msg, userMsg string) error {
+	b.userMsg = userMsg
+	return b.Msg(msg)
 }
 
 // Context extracts OpenTelemetry trace information and context values into the error.

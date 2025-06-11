@@ -48,6 +48,7 @@ func NewPrinter(opts ...PrinterOption) *Printer {
 		WithoutJSON(),
 		WithIndent(2),
 		WithVerbose(), // expands to all fields
+		WithInfiniteDepth(),
 	}, opts...)
 
 	p := &Printer{}
@@ -56,6 +57,10 @@ func NewPrinter(opts ...PrinterOption) *Printer {
 	}
 
 	return p
+}
+
+func Print(err error) {
+	NewPrinter().Print(err)
 }
 
 func (p *Printer) PrettyPrint(err error) {
@@ -77,6 +82,6 @@ func (p *Printer) Prints(err error) string {
 	if p.json {
 		return p.printsJson(err, 0)
 	} else {
-		return p.printsText(err, 0)
+		return p.PrintErrorText(err, 0)
 	}
 }

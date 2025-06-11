@@ -33,7 +33,7 @@ func (p *Printer) toJsonError(err error, depth int) jsonError {
 		related []jsonError
 	)
 
-	if depth < p.maxDepth {
+	if p.maxDepth < 0 || depth < p.maxDepth {
 		for _, c := range Causes(err) {
 			causes = append(causes, p.toJsonError(c, depth+1))
 		}
