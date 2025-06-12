@@ -179,7 +179,11 @@ func (b Builder) CauseUnwrap(causes ...error) Builder {
 	for _, cause := range causes {
 		if cause != nil {
 			if x, ok := cause.(interface{ Unwrap() []error }); ok {
-				b.causes = append(b.causes, x.Unwrap()...)
+				for _, cause := range x.Unwrap() {
+					if cause != nil {
+						b.causes = append(b.causes, cause)
+					}
+				}
 			} else {
 				b.causes = append(b.causes, cause)
 			}
@@ -212,7 +216,11 @@ func (b Builder) RelatedUnwrap(related ...error) Builder {
 	for _, related := range related {
 		if related != nil {
 			if x, ok := related.(interface{ Unwrap() []error }); ok {
-				b.related = append(b.related, x.Unwrap()...)
+				for _, related := range x.Unwrap() {
+					if related != nil {
+						b.related = append(b.related, related)
+					}
+				}
 			} else {
 				b.related = append(b.related, related)
 			}
