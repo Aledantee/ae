@@ -157,6 +157,9 @@ func (b Builder) Cause(causes ...error) Builder {
 	return b.Causes(causes)
 }
 
+// Causes adds one or more underlying causes to the error.
+// It filters out any nil errors from the provided list.
+// The causes represent errors that directly led to this error occurring.
 func (b Builder) Causes(causes []error) Builder {
 	for _, cause := range causes {
 		if cause != nil {
@@ -168,8 +171,16 @@ func (b Builder) Causes(causes []error) Builder {
 }
 
 // Related adds one or more related errors.
+// It filters out any nil errors from the provided list.
+// Related errors are those that are connected to this error but are not direct causes.
+// This can include errors that occurred during the handling of the cause(s).
 func (b Builder) Related(related ...error) Builder {
-	b.related = append(b.related, related...)
+	for _, related := range related {
+		if related != nil {
+			b.related = append(b.related, related)
+		}
+	}
+
 	return b
 }
 
