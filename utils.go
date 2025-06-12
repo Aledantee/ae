@@ -20,3 +20,9 @@ func Wrap(msg string, errs ...error) error {
 		Causes(filtered).
 		Msg(msg)
 }
+
+// Msg creates a new error with the given message.
+// It is a convenience function that wraps New().Msg(msg).
+func Msg(msg string) error {
+	return New().Msg(msg)
+}
