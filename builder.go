@@ -170,6 +170,25 @@ func (b Builder) Causes(causes []error) Builder {
 	return b
 }
 
+// CauseUnwrap adds one or more underlying causes to the error, unwrapping any errors that implement the Unwrap() []error interface.
+// It filters out any nil errors from the provided list.
+// If an error implements Unwrap() []error, its unwrapped errors are added individually.
+// Otherwise, the error is added as-is.
+// The causes represent errors that directly led to this error occurring.
+func (b Builder) CauseUnwrap(causes ...error) Builder {
+	for _, cause := range causes {
+		if cause != nil {
+			if x, ok := cause.(interface{ Unwrap() []error }); ok {
+				b.causes = append(b.causes, x.Unwrap()...)
+			} else {
+				b.causes = append(b.causes, cause)
+			}
+		}
+	}
+
+	return b
+}
+
 // Related adds one or more related errors.
 // It filters out any nil errors from the provided list.
 // Related errors are those that are connected to this error but are not direct causes.
@@ -178,6 +197,25 @@ func (b Builder) Related(related ...error) Builder {
 	for _, related := range related {
 		if related != nil {
 			b.related = append(b.related, related)
+		}
+	}
+
+	return b
+}
+
+// RelatedUnwrap adds one or more related errors, unwrapping any errors that implement the Unwrap() []error interface.
+// It filters out any nil errors from the provided list.
+// If an error implements Unwrap() []error, its unwrapped errors are added individually.
+// Otherwise, the error is added as-is.
+// Related errors are those that are connected to this error but are not direct causes.
+func (b Builder) RelatedUnwrap(related ...error) Builder {
+	for _, related := range related {
+		if related != nil {
+			if x, ok := related.(interface{ Unwrap() []error }); ok {
+				b.related = append(b.related, x.Unwrap()...)
+			} else {
+				b.related = append(b.related, related)
+			}
 		}
 	}
 
