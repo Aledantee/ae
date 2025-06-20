@@ -59,8 +59,8 @@ func NewPrinter(opts ...PrinterOption) *Printer {
 	return p
 }
 
-func Print(err error) {
-	NewPrinter().Print(err)
+func Print(err error, opts ...PrinterOption) {
+	NewPrinter(opts...).Print(err)
 }
 
 func (p *Printer) PrettyPrint(err error) {

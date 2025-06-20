@@ -1,6 +1,15 @@
 package ae
 
-import "time"
+import (
+	"bytes"
+	"maps"
+	"runtime/debug"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/DataDog/gostackparse"
+)
 
 // Stack represents a stack trace with associated metadata for a single goroutine.
 type Stack struct {
@@ -16,9 +25,9 @@ type Stack struct {
 	Frames []*StackFrame `json:"frames"`
 	// FramesElided indicates whether some frames were omitted from the trace
 	FramesElided bool `json:"frames_elided"`
-	// Parent points to the parent stack if this is a child stack
-	Parent *Stack `json:"parent"`
-	// Ancestor points to the root ancestor stack
+	// CreatedBy points to the exact frame that created this stack.
+	CreatedBy *StackFrame `json:"parent"`
+	// Ancestor points to the root ancestor, which is the stack that crated this stack.
 	Ancestor *Stack `json:"ancestor"`
 }
 
@@ -32,6 +41,82 @@ type StackFrame struct {
 	Line int `json:"line"`
 }
 
+// droppedFuncs is a list of functions that are dropped from the stack trace.
+var droppedFuncs = []string{
+	"ae.newStack",
+	"ae.Builder.Stack",
+	"debug.Stack",
+}
+
+// newStack captures the current stack trace of all goroutines and returns them as a slice of Stack objects.
+// It parses the debug stack information to extract goroutine details including their state, wait times,
+// locked status, and stack frames. The function also establishes relationships between goroutines
+// by linking them to their creating frames and ancestor stacks.
+//
+// Returns a slice of Stack objects representing all active goroutines.
 func newStack() []*Stack {
-	return nil
+	goRoutines, _ := gostackparse.Parse(bytes.NewReader(debug.Stack()))
+
+	stacks := make(map[int]*Stack)
+	ancestors := make(map[int]int)
+
+	for _, g := range goRoutines {
+		var frames []*StackFrame
+		for _, frame := range g.Stack {
+			funcParts := strings.Split(frame.Func, "/")
+			funcName := funcParts[len(funcParts)-1]
+
+			if slices.Contains(droppedFuncs, funcName) {
+				continue
+			}
+
+			frames = append(frames, &StackFrame{
+				Func: frame.Func,
+				File: frame.File,
+				Line: frame.Line,
+			})
+		}
+
+		stack := &Stack{
+			ID:        g.ID,
+			State:     g.State,
+			Wait:      g.Wait,
+			Locked:    g.LockedToThread,
+			Frames:    frames,
+			CreatedBy: nil,
+			Ancestor:  nil,
+		}
+
+		if g.CreatedBy != nil {
+			stack.CreatedBy = &StackFrame{
+				Func: g.CreatedBy.Func,
+				File: g.CreatedBy.File,
+				Line: g.CreatedBy.Line,
+			}
+		}
+		if g.Ancestor != nil {
+			ancestors[g.ID] = g.Ancestor.ID
+		}
+
+		stacks[g.ID] = stack
+	}
+
+	for stackID, ancestorID := range ancestors {
+		stack, ok := stacks[stackID]
+		if !ok {
+			// This is a bug, but let's not panic a prod system in the error path
+			continue
+		}
+
+		ancestorStack, ok := stacks[ancestorID]
+		if !ok {
+			// This is a bug, but let's not panic a prod system in the error path
+			continue
+		}
+
+		stack.Ancestor = ancestorStack
+		stacks[stackID] = stack
+	}
+
+	return slices.Collect(maps.Values(stacks))
 }
