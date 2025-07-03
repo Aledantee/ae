@@ -66,7 +66,7 @@ func (p *Printer) formatErrorLine(err error) string {
 		if hint := Hint(err); hint != "" {
 			sb.WriteString(" (")
 			sb.WriteString(p.fmt(hint, colHint))
-			sb.WriteString(")\n")
+			sb.WriteRune(')')
 		}
 	}
 
@@ -74,8 +74,8 @@ func (p *Printer) formatErrorLine(err error) string {
 }
 
 // formatAttributeLine formats a single attribute line
-func (p *Printer) formatAttributeLine(indent int, key string, value interface{}) string {
-	return p.fmt("%s-> %s: %v", colCode, strings.Repeat(" ", indent), key, value)
+func (p *Printer) formatAttributeLine(indent int, key string, value any) string {
+	return fmt.Sprintf("%s-> %s: %s", strings.Repeat(" ", indent), p.fmt(key, colAttrKey), p.fmt("%v", colAttrVal, value))
 }
 
 // printErrorCauses recursively prints the error causes with proper tree structure
@@ -127,8 +127,8 @@ func (p *Printer) PrintErrorText(err error, depth int) string {
 
 	if len(attrs) > 0 {
 		for k, v := range attrs {
+			sb.WriteRune('\n')
 			sb.WriteString(p.formatAttributeLine(p.indent, k, v))
-			sb.WriteString("\n")
 		}
 	}
 
@@ -136,7 +136,7 @@ func (p *Printer) PrintErrorText(err error, depth int) string {
 	if p.causes && (p.maxDepth < 0 || depth < p.maxDepth) {
 		if causes := Causes(err); len(causes) > 0 {
 			if depth == 0 {
-				sb.WriteString(p.fmt("Causes:\n", colMsg))
+				sb.WriteString("\nCauses:\n")
 			}
 			p.printErrorCauses(causes, depth+1, &sb, "")
 		}
