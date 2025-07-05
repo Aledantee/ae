@@ -67,7 +67,7 @@ func Code(err error) string {
 // Returns 1 if err is nil or if no exit code is found in the error or its causes.
 func ExitCode(err error) int {
 	if err == nil {
-		return 1
+		return 0
 	}
 
 	if ae, ok := err.(ErrorExitCode); ok {
