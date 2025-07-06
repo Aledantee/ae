@@ -70,7 +70,7 @@ func ExitCode(err error) int {
 		return 0
 	}
 
-	if ae, ok := err.(ErrorExitCode); ok {
+	if ae, ok := err.(ErrorExitCode); ok && ae.ExitCode() > 0 {
 		return ae.ExitCode()
 	}
 
