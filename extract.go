@@ -63,17 +63,25 @@ func Code(err error) string {
 
 // ExitCode extracts the process exit code from an error.
 // If the error implements ErrorExitCode, returns its ExitCode().
-// Returns -1 if err is nil or if the error does not implement ErrorExitCode.
+// Otherwise, recursively checks all causes and returns the highest exit code found.
+// Returns 1 if err is nil or if no exit code is found in the error or its causes.
 func ExitCode(err error) int {
 	if err == nil {
-		return -1
+		return 0
 	}
 
 	if ae, ok := err.(ErrorExitCode); ok {
 		return ae.ExitCode()
 	}
 
-	return -1
+	exitCode := 1
+	for _, cause := range Causes(err) {
+		if ec := ExitCode(cause); ec > exitCode {
+			exitCode = ec
+		}
+	}
+
+	return exitCode
 }
 
 // TraceId extracts the distributed tracing ID from an error.
