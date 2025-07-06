@@ -25,17 +25,19 @@ func (p *Printer) formatErrorLine(err error) string {
 
 	// Print code if enabled and available
 	codeOpen := false
-	if p.code {
-		if code := Code(err); code != "" {
+	if p.code || p.exitCode {
+		code := Code(err)
+		exitCode := ExitCode(err)
+
+		if code != "" || exitCode > 0 {
 			sb.WriteString(p.fmt("{", colCode))
-			sb.WriteString(p.fmt(code, colCode))
 			codeOpen = true
 		}
-	}
 
-	// Print exit code if enabled
-	if p.exitCode {
-		if exitCode := ExitCode(err); exitCode > 0 {
+		if p.code && code != "" {
+			sb.WriteString(p.fmt(code, colCode))
+		}
+		if p.exitCode && exitCode > 0 {
 			sb.WriteString(p.fmt(fmt.Sprintf("/%d", exitCode), colCode))
 		}
 	}
