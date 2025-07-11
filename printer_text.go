@@ -37,7 +37,7 @@ func (p *Printer) formatErrorLine(err error) string {
 		if p.code && code != "" {
 			sb.WriteString(p.fmt(code, colCode))
 		}
-		if p.exitCode && exitCode > 0 {
+		if p.exitCode && exitCode > 1 {
 			sb.WriteString(p.fmt(fmt.Sprintf("/%d", exitCode), colCode))
 		}
 	}
