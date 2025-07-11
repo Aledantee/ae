@@ -29,7 +29,7 @@ func (p *Printer) formatErrorLine(err error) string {
 		code := Code(err)
 		exitCode := ExitCode(err)
 
-		if code != "" || exitCode > 0 {
+		if code != "" || exitCode > 1 {
 			sb.WriteString(p.fmt("{", colCode))
 			codeOpen = true
 		}
