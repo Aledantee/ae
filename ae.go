@@ -45,75 +45,75 @@ type Ae struct {
 	stacks []*Stack
 }
 
-// Message returns the internal error message.
-func (a *Ae) Message() string {
+// ErrorMessage returns the internal error message.
+func (a Ae) ErrorMessage() string {
 	return a.msg
 }
 
-// UserMessage returns the user-friendly error message.
-func (a *Ae) UserMessage() string {
+// ErrorUserMessage returns the user-friendly error message.
+func (a Ae) ErrorUserMessage() string {
 	return a.userMsg
 }
 
-// Hint returns additional guidance for resolving the error.
-func (a *Ae) Hint() string {
+// ErrorHint returns additional guidance for resolving the error.
+func (a Ae) ErrorHint() string {
 	return a.hint
 }
 
-// Timestamp returns the timestamp of the error.
-func (a *Ae) Timestamp() time.Time {
+// ErrorTimestamp returns the timestamp of the error.
+func (a Ae) ErrorTimestamp() time.Time {
 	return a.timestamp
 }
 
-// Code returns the error code.
-func (a *Ae) Code() string {
+// ErrorCode returns the error code.
+func (a Ae) ErrorCode() string {
 	return a.code
 }
 
-// ExitCode returns the process exit code associated with this error.
-func (a *Ae) ExitCode() int {
+// ErrorExitCode returns the process exit code associated with this error.
+func (a Ae) ErrorExitCode() int {
 	return a.exitCode
 }
 
-// TraceId returns the distributed tracing ID.
-func (a *Ae) TraceId() string {
+// ErrorTraceId returns the distributed tracing ID.
+func (a Ae) ErrorTraceId() string {
 	return a.traceId
 }
 
-// SpanId returns the operation span ID.
-func (a *Ae) SpanId() string {
+// ErrorSpanId returns the operation span ID.
+func (a Ae) ErrorSpanId() string {
 	return a.spanId
 }
 
-// Tags returns a slice of all tags associated with this error.
-func (a *Ae) Tags() []string {
+// ErrorTags returns a slice of all tags associated with this error.
+func (a Ae) ErrorTags() []string {
 	return slices.Collect(maps.Keys(a.tags))
 }
 
-// Attributes returns a copy of the error's attributes map.
-func (a *Ae) Attributes() map[string]any {
+// ErrorAttributes returns a copy of the error's attributes map.
+func (a Ae) ErrorAttributes() map[string]any {
 	return maps.Clone(a.attributes)
 }
 
-// Causes returns a copy of the underlying errors that caused this error.
-func (a *Ae) Causes() []error {
+// ErrorCauses returns a copy of the underlying errors that caused this error.
+func (a Ae) ErrorCauses() []error {
 	return slices.Clone(a.causes)
 }
 
-// Related returns a copy of the errors that are related to this error, but not a direct cause.
+// ErrorRelated returns a copy of the errors that are related to this error, but not a direct cause.
 // Also includes errors that occurred during the handling of the cause(s).
-func (a *Ae) Related() []error {
+func (a Ae) ErrorRelated() []error {
 	return slices.Clone(a.related)
 }
 
-// Stacks returns a copy of the stack traces associated with this error.
-func (a *Ae) Stacks() []*Stack {
+// ErrorStacks returns a copy of the stack traces associated with this error.
+func (a Ae) ErrorStacks() []*Stack {
 	return slices.Clone(a.stacks)
 }
 
 // Error implements the error interface by returning a string representation of the error.
 // It includes the main error message and any underlying causes.
-func (a *Ae) Error() string {
+func (a Ae) Error() string {
 	var errMsg strings.Builder
 	errMsg.WriteString(a.msg)
 
@@ -139,29 +139,29 @@ func (a *Ae) Error() string {
 
 // Unwrap returns the underlying errors that caused this error.
 // This implements the errors.Unwrap interface.
-func (a *Ae) Unwrap() []error {
-	return a.Causes()
+func (a Ae) Unwrap() []error {
+	return a.ErrorCauses()
 }
 
 // Print writes the formatted error to standard output using the provided printer options.
-func (a *Ae) Print(opts ...PrinterOption) {
+func (a Ae) Print(opts ...PrinterOption) {
 	NewPrinter(opts...).Print(a)
 }
 
 // Prints returns a string representation of the error using the provided printer options.
-func (a *Ae) Prints(opts ...PrinterOption) string {
+func (a Ae) Prints(opts ...PrinterOption) string {
 	return NewPrinter(opts...).Prints(a)
 }
 
 // clone creates and returns a deep copy of the Ae instance and its associated fields.
-func (a *Ae) clone() *Ae {
-	b := *a
+func (a Ae) clone() Ae {
+	cpy := a
 
-	b.tags = maps.Clone(a.tags)
-	b.attributes = maps.Clone(a.attributes)
-	b.causes = slices.Clone(a.causes)
-	b.related = slices.Clone(a.related)
-	b.stacks = slices.Clone(a.stacks)
+	cpy.tags = maps.Clone(a.tags)
+	cpy.attributes = maps.Clone(a.attributes)
+	cpy.causes = slices.Clone(a.causes)
+	cpy.related = slices.Clone(a.related)
+	cpy.stacks = slices.Clone(a.stacks)
 
-	return &b
+	return cpy
 }

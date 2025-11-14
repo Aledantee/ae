@@ -161,12 +161,10 @@ func (p *Printer) PrintErrorText(err error, depth int) string {
 					if j < len(stack.Frames)-1 {
 						prefix = "├─ "
 					}
+
 					sb.WriteString(strings.Repeat(" ", p.indent*2))
 					sb.WriteString(prefix)
-					sb.WriteString(p.fmt(fmt.Sprintf("%s\n", frame.Func), colCode))
-					sb.WriteString(strings.Repeat(" ", p.indent*2))
-					sb.WriteString("   ")
-					sb.WriteString(p.fmt(fmt.Sprintf("at %s:%d\n", frame.File, frame.Line), colCode))
+					sb.WriteString(p.fmt(fmt.Sprintf("%s at %s:%d\n", frame.Func, frame.File, frame.Line), colCode))
 				}
 			}
 		}

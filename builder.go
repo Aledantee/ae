@@ -20,6 +20,12 @@ func New() Builder {
 	}
 }
 
+// NewC creates and returns a new instance of Builder based on the given context.
+// Shorthand for New().Context(ctx).
+func NewC(ctx context.Context) Builder {
+	return New().Context(ctx)
+}
+
 // From creates and returns a new instance of Builder based on the given error.
 func From(err error) Builder {
 	if err == nil {
@@ -28,55 +34,61 @@ func From(err error) Builder {
 
 	//goland:noinspection GoTypeAssertionOnErrors
 	if x, ok := err.(*Ae); ok {
-		return (Builder)(*x.clone())
+		return (Builder)(x.clone())
 	}
 
 	b := New()
 
 	if x, ok := err.(ErrorMessage); ok {
-		b.msg = x.Message()
+		b.msg = x.ErrorMessage()
 	}
 	if x, ok := err.(ErrorUserMessage); ok {
-		b.userMsg = x.UserMessage()
+		b.userMsg = x.ErrorUserMessage()
 	}
 	if x, ok := err.(ErrorTraceId); ok {
-		b.traceId = x.TraceId()
+		b.traceId = x.ErrorTraceId()
 	}
 	if x, ok := err.(ErrorSpanId); ok {
-		b.spanId = x.SpanId()
+		b.spanId = x.ErrorSpanId()
 	}
 	if x, ok := err.(ErrorTags); ok {
 		b.tags = make(map[string]struct{})
-		for _, tag := range x.Tags() {
+		for _, tag := range x.ErrorTags() {
 			b.tags[tag] = struct{}{}
 		}
 	}
 	if x, ok := err.(ErrorCode); ok {
-		b.code = x.Code()
+		b.code = x.ErrorCode()
 	}
 	if x, ok := err.(ErrorAttributes); ok {
-		b.attributes = x.Attributes()
+		b.attributes = x.ErrorAttributes()
 	}
 	if x, ok := err.(ErrorExitCode); ok {
-		b.exitCode = x.ExitCode()
+		b.exitCode = x.ErrorExitCode()
 	}
 	if x, ok := err.(ErrorHint); ok {
-		b.hint = x.Hint()
+		b.hint = x.ErrorHint()
 	}
 	if x, ok := err.(ErrorRelated); ok {
-		b.related = x.Related()
+		b.related = x.ErrorRelated()
 	}
 	if x, ok := err.(ErrorCauses); ok {
-		b.causes = x.Causes()
+		b.causes = x.ErrorCauses()
 	}
 	if x, ok := err.(ErrorTimestamp); ok {
-		b.timestamp = x.Timestamp()
+		b.timestamp = x.ErrorTimestamp()
 	}
 	if x, ok := err.(ErrorStacks); ok {
-		b.stacks = x.Stacks()
+		b.stacks = x.ErrorStacks()
 	}
 
 	return b
+}
+
+// FromC creates and returns a new instance of Builder based on the given error and context.
+// Shorthand for From(err).Context(ctx).
+func FromC(ctx context.Context, err error) Builder {
+	return From(err).Context(ctx)
 }
 
 // Hint sets a hint message that may help resolve the error.
@@ -251,7 +263,8 @@ func (b Builder) UserMsg(msg, userMsg string) error {
 	return b.Msg(msg)
 }
 
-// Context extracts OpenTelemetry trace information and context values into the error.
+// Context extracts OpenTelemetry trace information, tags and attributes from the given context.
+// Additionally, it adds the provided keys as attributes.
 // It captures span and trace IDs if present, and adds any requested context values as attributes.
 // The keys parameter can be strings, fmt.Stringer implementations, or any other type that can be converted to a string.
 func (b Builder) Context(ctx context.Context, keys ...any) Builder {
@@ -264,6 +277,9 @@ func (b Builder) Context(ctx context.Context, keys ...any) Builder {
 			b.traceId = span.TraceID().String()
 		}
 	}
+
+	b = b.Tags(TagsFromContext(ctx)...)
+	b = b.Attrs(AttributesFromContext(ctx))
 
 	for _, k := range keys {
 		v := ctx.Value(k)
