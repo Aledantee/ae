@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/aledantee/ae"
-)
+import "go.aledante.io/ae"
 
 func main() {
 	// Create simple error message

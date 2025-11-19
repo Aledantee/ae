@@ -4,7 +4,7 @@ import (
 	stdErrors "errors"
 	"strings"
 
-	"github.com/aledantee/ae"
+	"go.aledante.io/ae"
 )
 
 // New creates a new ae.Ae error with the given message.
@@ -45,6 +45,7 @@ func Join(errs ...error) error {
 
 		sb.WriteRune(']')
 		return ae.New().
+			Causes(filtered).
 			Msg(sb.String())
 	}
 }

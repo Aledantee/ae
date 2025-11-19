@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/aledantee/ae"
+	"go.aledante.io/ae"
 )
 
 func main() {
