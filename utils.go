@@ -69,8 +69,8 @@ func Exit(err error) {
 }
 
 // PrintExit prints the error to stderr and exits the program with the exit code returned by ExitCode.
-// Does nothing if the error is nil.
-func PrintExit(err error) {
-	Print(err)
+// Does not print anything and exits with code 0 if the error is nil.
+func PrintExit(err error, opts ...PrinterOption) {
+	Print(err, opts...)
 	Exit(err)
 }
