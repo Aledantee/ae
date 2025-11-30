@@ -1,6 +1,7 @@
 package ae
 
 import (
+	"context"
 	"fmt"
 	"os"
 )
@@ -52,10 +53,22 @@ func Msg(msg string) error {
 	return New().Msg(msg)
 }
 
+// MsgC creates a new error with the given message and context.
+// It is a convenience function that wraps NewC(ctx).Msg(msg).
+func MsgC(ctx context.Context, msg string) error {
+	return NewC(ctx).Msg(msg)
+}
+
 // Msgf creates a new error with the given message.
-// It is a convenience function that wraps New().Msg(msg).
+// It is a convenience function that wraps New().Msgf(msg, args...).
 func Msgf(msg string, args ...any) error {
-	return Msg(fmt.Sprintf(msg, args...))
+	return New().Msgf(msg, args...)
+}
+
+// MsgCf creates a new error with the given message and context.
+// It is a convenience function that wraps NewC(ctx).Msgf(msg, args...).
+func MsgCf(ctx context.Context, msg string, args ...any) error {
+	return NewC(ctx).Msgf(msg, args...)
 }
 
 // Exit exits the program with the exit code returned by ExitCode.

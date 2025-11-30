@@ -256,6 +256,12 @@ func (b Builder) Msg(msg string) error {
 	return (*Ae)(&b)
 }
 
+// Msgf sets the error message and returns the final error.
+// This is a terminal operation that completes the builder chain.
+func (b Builder) Msgf(msg string, args ...any) error {
+	return b.Msg(fmt.Sprintf(msg, args...))
+}
+
 // UserMsg sets the error message and a user message. Then, it returns the final error.
 // This is a terminal operation that completes the builder chain.
 func (b Builder) UserMsg(msg, userMsg string) error {
