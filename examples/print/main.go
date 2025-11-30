@@ -32,8 +32,8 @@ func main() {
 
 	// Create printer with custom options using json formatting
 	printer := ae.NewPrinter(
-		ae.WithoutColors(),
-		ae.WithJSON(),
+		ae.NoPrintColors(),
+		ae.PrintJSON(),
 	)
 
 	// Print using custom printer

@@ -4,108 +4,108 @@ package ae
 // It is used to customize the behavior of a Printer instance through functional options.
 type PrinterOption func(p *Printer)
 
-// WithUserMessage returns a PrinterOption that enables inclusion of user-friendly messages in the output.
-func WithUserMessage() PrinterOption {
+// PrintUserMessage returns a PrinterOption that enables inclusion of user-friendly messages in the output.
+func PrintUserMessage() PrinterOption {
 	return func(p *Printer) {
 		p.userMsg = true
 	}
 }
 
-// WithoutUserMessage returns a PrinterOption that disables inclusion of user-friendly messages in the output.
-func WithoutUserMessage() PrinterOption {
+// NoPrintUserMessage returns a PrinterOption that disables inclusion of user-friendly messages in the output.
+func NoPrintUserMessage() PrinterOption {
 	return func(p *Printer) {
 		p.userMsg = false
 	}
 }
 
-// WithHint returns a PrinterOption that enables inclusion of hint messages in the output.
+// PrintHint returns a PrinterOption that enables inclusion of hint messages in the output.
 // Hint messages provide suggestions for resolving the error.
-func WithHint() PrinterOption {
+func PrintHint() PrinterOption {
 	return func(p *Printer) {
 		p.hint = true
 	}
 }
 
-// WithoutHint returns a PrinterOption that disables inclusion of hint messages in the output.
-func WithoutHint() PrinterOption {
+// NoPrintHint returns a PrinterOption that disables inclusion of hint messages in the output.
+func NoPrintHint() PrinterOption {
 	return func(p *Printer) {
 		p.hint = false
 	}
 }
 
-// WithTimestamp returns a PrinterOption that enables inclusion of error timestamps in the output.
-func WithTimestamp() PrinterOption {
+// PrintTimestamp returns a PrinterOption that enables inclusion of error timestamps in the output.
+func PrintTimestamp() PrinterOption {
 	return func(p *Printer) {
 		p.timestamp = true
 	}
 }
 
-// WithCode returns a PrinterOption that enables inclusion of error codes in the output.
-func WithCode() PrinterOption {
+// PrintCode returns a PrinterOption that enables inclusion of error codes in the output.
+func PrintCode() PrinterOption {
 	return func(p *Printer) {
 		p.code = true
 	}
 }
 
-// WithoutCode returns a PrinterOption that disables inclusion of error codes in the output.
-func WithoutCode() PrinterOption {
+// NoPrintCode returns a PrinterOption that disables inclusion of error codes in the output.
+func NoPrintCode() PrinterOption {
 	return func(p *Printer) {
 		p.code = false
 	}
 }
 
-// WithExitCode returns a PrinterOption that enables inclusion of exit codes in the output.
-func WithExitCode() PrinterOption {
+// PrintExitCode returns a PrinterOption that enables inclusion of exit codes in the output.
+func PrintExitCode() PrinterOption {
 	return func(p *Printer) {
 		p.exitCode = true
 	}
 }
 
-// WithoutExitCode returns a PrinterOption that disables inclusion of exit codes in the output.
-func WithoutExitCode() PrinterOption {
+// NoPrintExitCode returns a PrinterOption that disables inclusion of exit codes in the output.
+func NoPrintExitCode() PrinterOption {
 	return func(p *Printer) {
 		p.exitCode = false
 	}
 }
 
-// WithoutTimestamp returns a PrinterOption that disables inclusion of error timestamps in the output.
-func WithoutTimestamp() PrinterOption {
+// NoPrintTimestamp returns a PrinterOption that disables inclusion of error timestamps in the output.
+func NoPrintTimestamp() PrinterOption {
 	return func(p *Printer) {
 		p.timestamp = false
 	}
 }
 
-// WithStacks returns a PrinterOption that enables stack trace inclusion in the output.
-func WithStacks() PrinterOption {
+// PrintStacks returns a PrinterOption that enables stack trace inclusion in the output.
+func PrintStacks() PrinterOption {
 	return func(p *Printer) {
 		p.stacks = true
 	}
 }
 
-// WithoutStacks returns a PrinterOption that disables stack trace inclusion in the output.
-func WithoutStacks() PrinterOption {
+// NoPrintStacks returns a PrinterOption that disables stack trace inclusion in the output.
+func NoPrintStacks() PrinterOption {
 	return func(p *Printer) {
 		p.stacks = false
 	}
 }
 
-// WithJSON returns a PrinterOption that enables JSON formatting of the output.
-func WithJSON() PrinterOption {
+// PrintJSON returns a PrinterOption that enables JSON formatting of the output.
+func PrintJSON() PrinterOption {
 	return func(p *Printer) {
 		p.json = true
 	}
 }
 
-// WithoutJSON disables JSON formatting for the Printer, configuring it to produce plain text output instead.
-func WithoutJSON() PrinterOption {
+// NoPrintJSON disables JSON formatting for the Printer, configuring it to produce plain text output instead.
+func NoPrintJSON() PrinterOption {
 	return func(p *Printer) {
 		p.json = false
 	}
 }
 
-// WithIndent configures the Printer to use the specified number of spaces for indentation when formatting output.
+// PrintIndent configures the Printer to use the specified number of spaces for indentation when formatting output.
 // A minimum indentation of 1 is enforced.
-func WithIndent(indent int) PrinterOption {
+func PrintIndent(indent int) PrinterOption {
 	if indent <= 0 {
 		indent = 1
 	}
@@ -115,137 +115,135 @@ func WithIndent(indent int) PrinterOption {
 	}
 }
 
-// WithCauses returns a PrinterOption that enables inclusion of error causes in the output.
-func WithCauses() PrinterOption {
+// PrintCauses returns a PrinterOption that enables inclusion of error causes in the output.
+func PrintCauses() PrinterOption {
 	return func(p *Printer) {
 		p.causes = true
 	}
 }
 
-// WithRelated returns a PrinterOption that enables inclusion of related errors in the output.
-func WithRelated() PrinterOption {
-	return func(p *Printer) {
-		p.related = true
-	}
-}
-
-// WithoutRelated returns a PrinterOption that disables the inclusion of related errors in the printer's output.
-func WithoutRelated() PrinterOption {
-	return func(p *Printer) {
-		p.related = false
-	}
-}
-
-// WithoutCauses returns a PrinterOption that disables inclusion of error causes in the output.
-func WithoutCauses() PrinterOption {
+// NoPrintCauses returns a PrinterOption that disables inclusion of error causes in the output.
+func NoPrintCauses() PrinterOption {
 	return func(p *Printer) {
 		p.causes = false
 	}
 }
 
-// WithInfiniteDepth returns a PrinterOption that sets the error chain traversal depth to infinite.
+// PrintRelated returns a PrinterOption that enables inclusion of related errors in the output.
+func PrintRelated() PrinterOption {
+	return func(p *Printer) {
+		p.related = true
+	}
+}
+
+// NoPrintRelated returns a PrinterOption that disables the inclusion of related errors in the printer's output.
+func NoPrintRelated() PrinterOption {
+	return func(p *Printer) {
+		p.related = false
+	}
+}
+
+// PrintDepthInfinite returns a PrinterOption that sets the error chain traversal depth to infinite.
 // This means the printer will traverse the entire error chain regardless of depth.
-func WithInfiniteDepth() PrinterOption {
+func PrintDepthInfinite() PrinterOption {
 	return func(p *Printer) {
 		p.maxDepth = -1
 	}
 }
 
-// WithMaxDepth returns a PrinterOption that sets a specific maximum depth for error chain traversal.
+// PrintDepth returns a PrinterOption that sets a specific maximum depth for error chain traversal.
 // The printer will stop traversing the error chain after reaching the specified depth.
-func WithMaxDepth(depth int) PrinterOption {
+func PrintDepth(depth int) PrinterOption {
 	return func(p *Printer) {
 		p.maxDepth = depth
 	}
 }
 
-// WithColors returns a PrinterOption that enables colored output formatting.
-func WithColors() PrinterOption {
+// PrintColors returns a PrinterOption that enables colored output formatting.
+func PrintColors() PrinterOption {
 	return func(p *Printer) {
 		p.colors = true
 	}
 }
 
-// WithoutColors returns a PrinterOption that disables colored output formatting.
-func WithoutColors() PrinterOption {
+// NoPrintColors returns a PrinterOption that disables colored output formatting.
+func NoPrintColors() PrinterOption {
 	return func(p *Printer) {
 		p.colors = false
 	}
 }
 
-// WithTraceId returns a PrinterOption that enables inclusion of trace IDs in the output.
-func WithTraceId() PrinterOption {
+// PrintOtel returns a PrinterOption that enables inclusion of OTEL information in the output.
+func PrintOtel() PrinterOption {
 	return func(p *Printer) {
 		p.traceId = true
 	}
 }
 
-// WithoutTraceId returns a PrinterOption that disables inclusion of trace IDs in the output.
-func WithoutTraceId() PrinterOption {
+// NoPrintOtel returns a PrinterOption that disables inclusion of OTEL information in the output.
+func NoPrintOtel() PrinterOption {
 	return func(p *Printer) {
 		p.traceId = false
 	}
 }
 
-// WithSpanId returns a PrinterOption that enables inclusion of span IDs in the output.
-func WithSpanId() PrinterOption {
-	return func(p *Printer) {
-		p.spanId = true
-	}
-}
-
-// WithoutSpanId returns a PrinterOption that disables inclusion of span IDs in the output.
-func WithoutSpanId() PrinterOption {
-	return func(p *Printer) {
-		p.spanId = false
-	}
-}
-
-// WithTags returns a PrinterOption that enables inclusion of error tags in the output.
-func WithTags() PrinterOption {
+// PrintTags returns a PrinterOption that enables inclusion of error tags in the output.
+func PrintTags() PrinterOption {
 	return func(p *Printer) {
 		p.tags = true
 	}
 }
 
-// WithoutTags returns a PrinterOption that disables inclusion of error tags in the output.
-func WithoutTags() PrinterOption {
+// NoPrintTags returns a PrinterOption that disables inclusion of error tags in the output.
+func NoPrintTags() PrinterOption {
 	return func(p *Printer) {
 		p.tags = false
 	}
 }
 
-// WithAttributes returns a PrinterOption that enables inclusion of error attributes in the output.
-func WithAttributes() PrinterOption {
+// PrintAttributes returns a PrinterOption that enables inclusion of error attributes in the output.
+func PrintAttributes() PrinterOption {
 	return func(p *Printer) {
 		p.attributes = true
 	}
 }
 
-// WithoutAttributes returns a PrinterOption that disables inclusion of error attributes in the output.
-func WithoutAttributes() PrinterOption {
+// NoPrintAttributes returns a PrinterOption that disables inclusion of error attributes in the output.
+func NoPrintAttributes() PrinterOption {
 	return func(p *Printer) {
 		p.attributes = false
 	}
 }
 
-// WithVerbose returns a PrinterOption that enables all available output fields.
+// PrintVerbose returns a PrinterOption that enables all available output fields.
 // This includes user messages, hints, timestamps, codes, exit codes, colors,
 // trace IDs, span IDs, tags, attributes, causes, related errors, and stack traces.
-func WithVerbose() PrinterOption {
+func PrintVerbose() PrinterOption {
 	return withChained(
-		WithHint(),
-		WithTimestamp(),
-		WithCode(),
-		WithExitCode(),
-		WithColors(),
-		WithTraceId(),
-		WithSpanId(),
-		WithTags(),
-		WithAttributes(),
-		WithCauses(),
-		WithRelated(),
-		WithStacks(),
+		PrintHint(),
+		PrintTimestamp(),
+		PrintCode(),
+		PrintExitCode(),
+		PrintColors(),
+		PrintOtel(),
+		PrintTags(),
+		PrintAttributes(),
+		PrintCauses(),
+		PrintRelated(),
+		PrintStacks(),
+	)
+}
+
+// PrintCompact returns a PrinterOption that enables a minimal set of commonly useful output fields.
+func PrintCompact() PrinterOption {
+	return withChained(
+		PrintHint(),
+		PrintCode(),
+		PrintExitCode(),
+		PrintAttributes(),
+		PrintTags(),
+		PrintCauses(),
+		PrintRelated(),
 	)
 }
 

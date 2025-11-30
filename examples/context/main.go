@@ -11,7 +11,7 @@ func main() {
 }
 
 func a() error {
-	ctx := ae.WithAttributeValue(context.Background(), "test", "value")
+	ctx := ae.WithAttribute(context.Background(), "test", "value")
 	return b(ctx)
 }
 
