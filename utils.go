@@ -18,12 +18,28 @@ func Wrap(msg string, err error) error {
 		Msg(msg)
 }
 
+// WrapC creates a new error with the given message and context and wraps the provided error as a cause.
+// Returns nil if the provided error is nil.
+func WrapC(ctx context.Context, msg string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	return NewC(ctx).Cause(err).Msg(msg)
+}
+
 // Wrapf creates a new error with the given formatted message and wraps the provided errors as causes.
 // It filters out any nil errors from the provided list.
 // If all provided errors are nil, Wrap returns nil.
 // The returned error will have the given message and all non-nil errors as its causes.
 func Wrapf(msg string, err error, args ...any) error {
 	return Wrap(fmt.Sprintf(msg, args...), err)
+}
+
+// WrapCf creates a new error with the given formatted message and context and wraps the provided error as a cause.
+// Returns nil if the provided error is nil.
+func WrapCf(ctx context.Context, msg string, err error, args ...any) error {
+	return NewC(ctx).Cause(err).Msgf(msg, args...)
 }
 
 // WrapMany creates a new error with the given message and wraps the provided errors as causes.
