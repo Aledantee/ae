@@ -2,6 +2,7 @@ package ae
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Printer provides functionality for formatting and printing errors with various options.
@@ -19,19 +20,20 @@ type Printer struct {
 	maxDepth int
 
 	// flags for error fields
-	userMsg    bool
-	hint       bool
-	timestamp  bool
-	code       bool
-	exitCode   bool
-	traceId    bool
-	spanId     bool
-	panId      bool
-	tags       bool
-	attributes bool
-	causes     bool
-	related    bool
-	stacks     bool
+	userMsg      bool
+	hint         bool
+	timestamp    bool
+	code         bool
+	exitCode     bool
+	traceId      bool
+	spanId       bool
+	panId        bool
+	tags         bool
+	attributes   bool
+	causes       bool
+	related      bool
+	stacks       bool
+	frameFilters []func(frame *StackFrame) bool
 }
 
 // NewPrinter creates a new Printer with the given options.
@@ -51,7 +53,11 @@ func NewPrinter(opts ...PrinterOption) *Printer {
 		PrintDepthInfinite(),
 	}, opts...)
 
-	p := &Printer{}
+	p := &Printer{
+		frameFilters: []func(frame *StackFrame) bool{
+			hideInternalFrames,
+		},
+	}
 	for _, opt := range append(opts, PrintCauses()) {
 		opt(p)
 	}
@@ -84,4 +90,12 @@ func (p *Printer) Prints(err error) string {
 	} else {
 		return p.PrintErrorText(err, 0)
 	}
+}
+
+func hideInternalFrames(frame *StackFrame) bool {
+	if frame == nil {
+		return true
+	}
+
+	return strings.HasPrefix(frame.Func, "go.aledante.io/ae") || strings.HasPrefix(frame.Func, "runtime/debug")
 }

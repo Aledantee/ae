@@ -147,8 +147,26 @@ func (p *Printer) PrintErrorText(err error, depth int) string {
 	// Print stack traces if enabled and available
 	if p.stacks {
 		if stacks := Stacks(err); len(stacks) > 0 {
-			sb.WriteString(p.fmt("Stack Traces:\n", colCode))
+			sb.WriteString(p.fmt("\nStack Traces:\n", colCode))
 			for i, stack := range stacks {
+				var filteredFrames []*StackFrame
+
+				for _, frame := range stack.Frames {
+					drop := false
+
+					for _, filter := range p.frameFilters {
+						drop = drop || filter(frame)
+					}
+
+					if !drop {
+						filteredFrames = append(filteredFrames, frame)
+					}
+				}
+
+				if len(filteredFrames) == 0 {
+					continue
+				}
+
 				prefix := "└─ "
 				if i < len(stacks)-1 {
 					prefix = "├─ "
@@ -156,7 +174,8 @@ func (p *Printer) PrintErrorText(err error, depth int) string {
 				sb.WriteString(strings.Repeat(" ", p.indent))
 				sb.WriteString(prefix)
 				sb.WriteString(p.fmt(fmt.Sprintf("Goroutine %d (%s):\n", stack.ID, stack.State), colCode))
-				for j, frame := range stack.Frames {
+
+				for j, frame := range filteredFrames {
 					prefix := "└─ "
 					if j < len(stack.Frames)-1 {
 						prefix = "├─ "

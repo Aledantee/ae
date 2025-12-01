@@ -89,6 +89,14 @@ func NoPrintStacks() PrinterOption {
 	}
 }
 
+// PrintFrameFilters configures the Printer to filter stack frames based on the provided predicate functions.
+// Multiple calls to this option will result in a logical OR operation between the provided filters.
+func PrintFrameFilters(filters ...func(frame *StackFrame) bool) PrinterOption {
+	return func(p *Printer) {
+		p.frameFilters = append(p.frameFilters, filters...)
+	}
+}
+
 // PrintJSON returns a PrinterOption that enables JSON formatting of the output.
 func PrintJSON() PrinterOption {
 	return func(p *Printer) {

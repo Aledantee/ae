@@ -5,7 +5,6 @@ import (
 	"maps"
 	"runtime/debug"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/DataDog/gostackparse"
@@ -41,13 +40,6 @@ type StackFrame struct {
 	Line int `json:"line"`
 }
 
-// droppedFuncs is a list of functions that are dropped from the stack trace.
-var droppedFuncs = []string{
-	"ae.newStack",
-	"ae.Builder.Stack",
-	"debug.Stack",
-}
-
 // newStack captures the current stack trace of all goroutines and returns them as a slice of Stack objects.
 // It parses the debug stack information to extract goroutine details including their state, wait times,
 // locked status, and stack frames. The function also establishes relationships between goroutines
@@ -63,13 +55,6 @@ func newStack() []*Stack {
 	for _, g := range goRoutines {
 		var frames []*StackFrame
 		for _, frame := range g.Stack {
-			funcParts := strings.Split(frame.Func, "/")
-			funcName := funcParts[len(funcParts)-1]
-
-			if slices.Contains(droppedFuncs, funcName) {
-				continue
-			}
-
 			frames = append(frames, &StackFrame{
 				Func: frame.Func,
 				File: frame.File,
