@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/aledantee/ae"
 	"os"
+
+	"go.aledante.io/ae"
 )
 
 func main() {

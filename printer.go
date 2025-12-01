@@ -44,15 +44,15 @@ type Printer struct {
 // These defaults can be overridden using PrinterOption functions.
 func NewPrinter(opts ...PrinterOption) *Printer {
 	opts = append([]PrinterOption{
-		WithColors(),
-		WithoutJSON(),
-		WithIndent(2),
-		WithVerbose(), // expands to all fields
-		WithInfiniteDepth(),
+		PrintColors(),
+		NoPrintJSON(),
+		PrintIndent(2),
+		PrintVerbose(), // expands to all fields
+		PrintDepthInfinite(),
 	}, opts...)
 
 	p := &Printer{}
-	for _, opt := range append(opts, WithCauses()) {
+	for _, opt := range append(opts, PrintCauses()) {
 		opt(p)
 	}
 

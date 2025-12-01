@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/aledantee/ae"
-)
+import "go.aledante.io/ae"
 
 func main() {
 	// Create simple error message
@@ -34,8 +32,8 @@ func main() {
 
 	// Create printer with custom options using json formatting
 	printer := ae.NewPrinter(
-		ae.WithoutColors(),
-		ae.WithJSON(),
+		ae.NoPrintColors(),
+		ae.PrintJSON(),
 	)
 
 	// Print using custom printer

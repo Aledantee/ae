@@ -1,6 +1,7 @@
 package ae
 
 import (
+	"context"
 	"fmt"
 	"os"
 )
@@ -17,12 +18,28 @@ func Wrap(msg string, err error) error {
 		Msg(msg)
 }
 
+// WrapC creates a new error with the given message and context and wraps the provided error as a cause.
+// Returns nil if the provided error is nil.
+func WrapC(ctx context.Context, msg string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	return NewC(ctx).Cause(err).Msg(msg)
+}
+
 // Wrapf creates a new error with the given formatted message and wraps the provided errors as causes.
 // It filters out any nil errors from the provided list.
 // If all provided errors are nil, Wrap returns nil.
 // The returned error will have the given message and all non-nil errors as its causes.
 func Wrapf(msg string, err error, args ...any) error {
 	return Wrap(fmt.Sprintf(msg, args...), err)
+}
+
+// WrapCf creates a new error with the given formatted message and context and wraps the provided error as a cause.
+// Returns nil if the provided error is nil.
+func WrapCf(ctx context.Context, msg string, err error, args ...any) error {
+	return NewC(ctx).Cause(err).Msgf(msg, args...)
 }
 
 // WrapMany creates a new error with the given message and wraps the provided errors as causes.
@@ -52,10 +69,22 @@ func Msg(msg string) error {
 	return New().Msg(msg)
 }
 
+// MsgC creates a new error with the given message and context.
+// It is a convenience function that wraps NewC(ctx).Msg(msg).
+func MsgC(ctx context.Context, msg string) error {
+	return NewC(ctx).Msg(msg)
+}
+
 // Msgf creates a new error with the given message.
-// It is a convenience function that wraps New().Msg(msg).
+// It is a convenience function that wraps New().Msgf(msg, args...).
 func Msgf(msg string, args ...any) error {
-	return Msg(fmt.Sprintf(msg, args...))
+	return New().Msgf(msg, args...)
+}
+
+// MsgCf creates a new error with the given message and context.
+// It is a convenience function that wraps NewC(ctx).Msgf(msg, args...).
+func MsgCf(ctx context.Context, msg string, args ...any) error {
+	return NewC(ctx).Msgf(msg, args...)
 }
 
 // Exit exits the program with the exit code returned by ExitCode.
@@ -69,9 +98,9 @@ func Exit(err error) {
 }
 
 // PrintExit prints the error to stderr and exits the program with the exit code returned by ExitCode.
-// Does nothing if the error is nil.
-func PrintExit(err error) {
-	Print(err)
+// Does not print anything and exits with code 0 if the error is nil.
+func PrintExit(err error, opts ...PrinterOption) {
+	Print(err, opts...)
 	Exit(err)
 }
 

@@ -3,7 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/aledantee/ae"
+
+	"go.aledante.io/ae"
 )
 
 // This example demonstrates error chaining using ae.New() and its chaining methods.

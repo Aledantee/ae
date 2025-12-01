@@ -1,6 +1,6 @@
 package main
 
-import "github.com/aledantee/ae"
+import "go.aledante.io/ae"
 
 func main() {
 	err := ae.Wrap("test", ae.Msg("cause"))
