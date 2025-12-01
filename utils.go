@@ -74,3 +74,24 @@ func PrintExit(err error) {
 	Print(err)
 	Exit(err)
 }
+
+// Must panics if the provided error is not nil.
+// If nil, returns the provided value.
+//
+// May be used to unwrap errors returned by functions that return (value, error) tuples.
+// Example:
+//
+//	v := Must(SomeFunction())
+func Must[T any](v T, err error) T {
+	if err != nil {
+		panic(fmt.Sprintf("error must not be present: %v", err))
+	}
+
+	return v
+}
+
+// MustFunc calls the provided function and panics if the returned error is not nil.
+// Returns the value returned by the function.
+func MustFunc[T any](fn func() (T, error)) T {
+	return Must(fn())
+}

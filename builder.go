@@ -245,7 +245,6 @@ func (b Builder) RelatedUnwrap(related ...error) Builder {
 // Stack captures the current stack trace for the error.
 func (b Builder) Stack() Builder {
 	b.stacks = newStack()
-	fmt.Println()
 	return b
 }
 
