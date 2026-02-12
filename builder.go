@@ -91,6 +91,19 @@ func FromC(ctx context.Context, err error) Builder {
 	return From(err).Context(ctx)
 }
 
+// Recoverable sets whether the error is recoverable.
+// If recoverable is true, the error is considered recoverable; otherwise, it is not.
+func (b Builder) Recoverable(recoverable bool) Builder {
+	b.recoverable = recoverable
+	return b
+}
+
+// Fatal marks the error as not recoverable (i.e., fatal).
+// This is a shorthand for b.Recoverable(false).
+func (b Builder) Fatal() Builder {
+	return b.Recoverable(false)
+}
+
 // Hint sets a hint message that may help resolve the error.
 func (b Builder) Hint(hint string) Builder {
 	b.hint = hint

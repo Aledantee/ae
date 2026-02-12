@@ -16,6 +16,8 @@ type Ae struct {
 	userMsg string
 	// hint provides additional guidance or suggestions for resolving the error
 	hint string
+	// recoverable indicates whether the error is recoverable
+	recoverable bool
 
 	// timestamp is the time the error occurred
 	timestamp time.Time
@@ -58,6 +60,11 @@ func (a Ae) ErrorUserMessage() string {
 // ErrorHint returns additional guidance for resolving the error.
 func (a Ae) ErrorHint() string {
 	return a.hint
+}
+
+// ErrorIsRecoverable returns whether the error is recoverable.
+func (a Ae) ErrorIsRecoverable() bool {
+	return a.recoverable
 }
 
 // ErrorTimestamp returns the timestamp of the error.
