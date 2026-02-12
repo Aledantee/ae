@@ -7,18 +7,19 @@ type ErrorRecoverable interface {
 	ErrorIsRecoverable() bool
 }
 
-// IsRecoverable determines whether the given error is recoverable.
-//
-// If err is nil, IsRecoverable returns true.
-// If err implements the ErrorRecoverable interface, IsRecoverable returns the result of err.ErrorIsRecoverable().
-// Otherwise, IsRecoverable defaults to returning true.
 func IsRecoverable(err error) bool {
 	if err == nil {
 		return true
 	}
 
-	if ae, ok := err.(ErrorRecoverable); ok {
-		return ae.ErrorIsRecoverable()
+	if ae, ok := err.(ErrorRecoverable); ok && !ae.ErrorIsRecoverable() {
+		return false
+	}
+
+	for _, cause := range Causes(err) {
+		if !IsRecoverable(cause) {
+			return false
+		}
 	}
 
 	return true
