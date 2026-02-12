@@ -15,8 +15,9 @@ type Builder Ae
 // New creates and returns a new instance of Builder.
 func New() Builder {
 	return Builder{
-		tags:       make(map[string]struct{}),
-		attributes: make(map[string]any),
+		tags:        make(map[string]struct{}),
+		attributes:  make(map[string]any),
+		recoverable: true,
 	}
 }
 
