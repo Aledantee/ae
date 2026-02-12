@@ -18,6 +18,20 @@ func Wrap(msg string, err error) error {
 		Msg(msg)
 }
 
+// ReWrap creates a new error with the provided message and re-wraps all the underlying causes of the given error.
+// If the given error is nil or has no causes, it returns nil.
+// The resulting error contains the same causes as the input error but with a new top-level message.
+func ReWrap(msg string, err error) error {
+	causes := Causes(err)
+	if causes == nil {
+		return nil
+	}
+
+	return New().
+		Causes(causes).
+		Msg(msg)
+}
+
 // WrapC creates a new error with the given message and context and wraps the provided error as a cause.
 // Returns nil if the provided error is nil.
 func WrapC(ctx context.Context, msg string, err error) error {

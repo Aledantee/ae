@@ -7,6 +7,16 @@ type ErrorRecoverable interface {
 	ErrorIsRecoverable() bool
 }
 
+// IsRecoverable returns true if the given error is recoverable, and false otherwise.
+//
+// An error is considered recoverable if:
+//   - The error is nil (i.e., no error has occurred).
+//   - The error does not implement ErrorRecoverable,
+//     or implements it and ErrorIsRecoverable() returns true.
+//   - All underlying causes of the error (recursively)
+//     are also recoverable.
+//
+// If any error in the chain implements ErrorRecoverable and its ErrorIsRecoverable() returns false, then the overall error is not recoverable.
 func IsRecoverable(err error) bool {
 	if err == nil {
 		return true
