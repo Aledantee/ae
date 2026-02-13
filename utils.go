@@ -13,7 +13,9 @@ func Wrap(msg string, err error) error {
 		return nil
 	}
 
-	return From(err).Msg(msg)
+	return New().
+		Cause(err).
+		Msg(msg)
 }
 
 // ReWrap creates a new error with the provided message and re-wraps all the underlying causes of the given error.
