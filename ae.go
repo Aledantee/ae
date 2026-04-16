@@ -77,9 +77,22 @@ func (a Ae) ErrorCode() string {
 	return a.code
 }
 
-// ErrorExitCode returns the process exit code associated with this error.
+// ErrorExitCode returns this error's exit code. If none is set locally it
+// returns the highest exit code extracted from the recursive cause chain, or
+// 0 when no cause sets one either. This matches the contract documented on
+// the ErrorExitCode interface.
 func (a Ae) ErrorExitCode() int {
-	return a.exitCode
+	if a.exitCode > 0 {
+		return a.exitCode
+	}
+
+	max := 0
+	for _, c := range a.causes {
+		if ec := ExitCode(c); ec > max {
+			max = ec
+		}
+	}
+	return max
 }
 
 // ErrorTraceId returns the distributed tracing ID.

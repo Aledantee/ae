@@ -40,22 +40,23 @@ func WithAttribute(ctx context.Context, key string, value any) context.Context {
 }
 
 // WithAttributes creates a new context with the given attributes added to it.
-// If the context already contains attributes, the new attributes are added to the existing attributes. Attributes
-// with duplicate keys are overwritten.
+// If the context already contains attributes, the new attributes are merged
+// into a fresh map — existing entries with duplicate keys are overwritten and
+// the parent context's attribute map is never mutated.
 func WithAttributes(ctx context.Context, attrs map[string]any) context.Context {
-	existingAttrs, ok := ctx.Value(tagKey{}).(map[string]any)
-	if !ok {
-		existingAttrs = make(map[string]any)
-	}
+	existing, _ := ctx.Value(attributesKey{}).(map[string]any)
 
-	maps.Copy(existingAttrs, attrs)
-	return context.WithValue(ctx, attributesKey{}, existingAttrs)
+	merged := make(map[string]any, len(existing)+len(attrs))
+	maps.Copy(merged, existing)
+	maps.Copy(merged, attrs)
+
+	return context.WithValue(ctx, attributesKey{}, merged)
 }
 
 // AttributesFromContext extracts the attributes map from the given context.
 // If the context contains no attributes, it returns an empty map.
 func AttributesFromContext(ctx context.Context) map[string]any {
-	attrs, ok := ctx.Value(tagKey{}).(map[string]any)
+	attrs, ok := ctx.Value(attributesKey{}).(map[string]any)
 	if !ok {
 		return make(map[string]any)
 	}

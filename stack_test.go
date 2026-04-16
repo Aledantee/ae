@@ -47,25 +47,20 @@ func TestBuilder_StackCapturesAtLeastOneGoroutine(t *testing.T) {
 	}
 }
 
-func TestBuilder_StackDropsDocumentedHelpers(t *testing.T) {
+// TestBuilder_StackHidesInternalFramesInRenderedOutput asserts the default
+// printer filter (hideInternalFrames) drops ae/runtime internal frames from
+// the text output. Filtering happens at render time now — captured stacks
+// retain every frame — so the assertion targets the rendered string rather
+// than the captured []*Stack.
+func TestBuilder_StackHidesInternalFramesInRenderedOutput(t *testing.T) {
 	t.Parallel()
 
 	err := ae.New().Stack().Msg("with-stack")
-	stacks := ae.Stacks(err)
-	if len(stacks) == 0 {
-		t.Fatal("Stack() produced no stacks")
-	}
+	out := ae.NewPrinter(ae.NoPrintColors()).Prints(err)
 
-	// The package documents that ae.newStack, ae.Builder.Stack, and debug.Stack
-	// are filtered from the captured frames. Assert none appear.
-	dropped := []string{"ae.newStack", "ae.Builder.Stack", "debug.Stack"}
-	for _, stack := range stacks {
-		for _, f := range stack.Frames {
-			for _, d := range dropped {
-				if strings.HasSuffix(f.Func, d) {
-					t.Errorf("frame %q leaked through the drop filter %q", f.Func, d)
-				}
-			}
+	for _, prefix := range []string{"go.aledante.io/ae", "runtime/debug"} {
+		if strings.Contains(out, prefix) {
+			t.Errorf("internal frame with prefix %q leaked into the output:\n%s", prefix, out)
 		}
 	}
 }

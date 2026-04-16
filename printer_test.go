@@ -272,3 +272,85 @@ func TestGlobalPrint_DoesNotPanic(t *testing.T) {
 	}()
 	ae.Print(buildRichErr(t), ae.NoPrintColors())
 }
+
+func TestPrintFrameFilters_CustomFilterDropsMatchingFrames(t *testing.T) {
+	t.Parallel()
+
+	err := ae.New().Stack().Msg("with-stack")
+
+	// Ask the printer to additionally drop any frame whose function contains
+	// "testing." — net effect for a test process: strip the go test runtime
+	// frames so only this test's own invocation path survives.
+	filter := func(f *ae.StackFrame) bool {
+		return f != nil && strings.Contains(f.Func, "testing.")
+	}
+
+	out := ae.NewPrinter(ae.NoPrintColors(), ae.PrintFrameFilters(filter)).Prints(err)
+
+	if strings.Contains(out, "testing.") {
+		t.Errorf("custom frame filter did not drop 'testing.' frames:\n%s", out)
+	}
+}
+
+func TestPrintFrameFilters_GoroutineWithAllFramesFilteredIsOmitted(t *testing.T) {
+	t.Parallel()
+
+	err := ae.New().Stack().Msg("with-stack")
+
+	// A filter that drops every frame leaves no frames to print. The
+	// goroutine header must be omitted too — otherwise the output would
+	// carry a stranded "goroutine N (state)" line with nothing below it.
+	dropAll := func(f *ae.StackFrame) bool { return true }
+	out := ae.NewPrinter(ae.NoPrintColors(), ae.PrintFrameFilters(dropAll)).Prints(err)
+
+	if strings.Contains(out, "goroutine ") {
+		t.Errorf("goroutine header leaked despite all frames filtered out:\n%s", out)
+	}
+}
+
+func TestPrinter_FprintWritesToArbitraryWriter(t *testing.T) {
+	t.Parallel()
+
+	var buf strings.Builder
+	ae.NewPrinter(ae.NoPrintColors()).Fprint(&buf, ae.New().Msg("hello"))
+
+	got := buf.String()
+	if !strings.Contains(got, "[ERROR]") || !strings.Contains(got, "hello") {
+		t.Errorf("Fprint output missing expected substrings: %q", got)
+	}
+	if !strings.HasSuffix(got, "\n") {
+		t.Errorf("Fprint output not newline-terminated: %q", got)
+	}
+}
+
+func TestPrinter_PrintTraceIdAndPrintSpanIdIndependent(t *testing.T) {
+	t.Parallel()
+
+	err := ae.New().TraceId("tid").SpanId("sid").Msg("x")
+
+	// Trace only — span should be absent.
+	out := ae.NewPrinter(
+		ae.NoPrintColors(),
+		ae.NoPrintOtel(), // reset both
+		ae.PrintTraceId(),
+	).Prints(err)
+	if !strings.Contains(out, "tid") {
+		t.Errorf("PrintTraceId alone dropped trace id:\n%s", out)
+	}
+	if strings.Contains(out, "sid") {
+		t.Errorf("PrintTraceId alone emitted span id:\n%s", out)
+	}
+
+	// Span only — trace should be absent.
+	out = ae.NewPrinter(
+		ae.NoPrintColors(),
+		ae.NoPrintOtel(),
+		ae.PrintSpanId(),
+	).Prints(err)
+	if !strings.Contains(out, "sid") {
+		t.Errorf("PrintSpanId alone dropped span id:\n%s", out)
+	}
+	if strings.Contains(out, "tid") {
+		t.Errorf("PrintSpanId alone emitted trace id:\n%s", out)
+	}
+}

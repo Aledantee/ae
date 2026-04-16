@@ -172,3 +172,89 @@ func TestMsgCf_FormatsAndAttachesContext(t *testing.T) {
 		t.Errorf("Tags = %v, want to contain 'mcf-tag'", ae.Tags(err))
 	}
 }
+
+func TestReWrap_NilReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	if got := ae.ReWrap("outer", nil); got != nil {
+		t.Errorf("ReWrap(_, nil) = %v, want nil", got)
+	}
+}
+
+func TestReWrap_ErrorWithoutCausesReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	if got := ae.ReWrap("outer", errors.New("leaf")); got != nil {
+		t.Errorf("ReWrap on causeless error = %v, want nil", got)
+	}
+}
+
+func TestReWrap_ReusesCausesUnderNewMessage(t *testing.T) {
+	t.Parallel()
+
+	c1 := errors.New("a")
+	c2 := errors.New("b")
+	original := ae.New().Cause(c1, c2).Msg("original")
+
+	rewrapped := ae.ReWrap("new top", original)
+	if rewrapped == nil {
+		t.Fatal("ReWrap returned nil for an error with causes")
+	}
+
+	if !strings.Contains(rewrapped.Error(), "new top") {
+		t.Errorf("Error() = %q, want to contain 'new top'", rewrapped.Error())
+	}
+	// The original's message should NOT appear — ReWrap strips the outer layer.
+	if strings.Contains(rewrapped.Error(), "original") {
+		t.Errorf("Error() = %q, still carries the original outer message", rewrapped.Error())
+	}
+	causes := ae.Causes(rewrapped)
+	if len(causes) != 2 {
+		t.Fatalf("causes len = %d, want 2", len(causes))
+	}
+	if !errors.Is(rewrapped, c1) || !errors.Is(rewrapped, c2) {
+		t.Errorf("rewrapped error does not errors.Is both original causes")
+	}
+}
+
+func TestMust_ReturnsValueWhenErrNil(t *testing.T) {
+	t.Parallel()
+
+	got := ae.Must(42, nil)
+	if got != 42 {
+		t.Errorf("Must(42, nil) = %d, want 42", got)
+	}
+}
+
+func TestMust_PanicsOnError(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Must did not panic on non-nil error")
+		}
+	}()
+	_ = ae.Must("unused", errors.New("boom"))
+}
+
+func TestMustFunc_ReturnsValueWhenErrNil(t *testing.T) {
+	t.Parallel()
+
+	got := ae.MustFunc(func() (string, error) { return "ok", nil })
+	if got != "ok" {
+		t.Errorf("MustFunc ok-case = %q, want 'ok'", got)
+	}
+}
+
+func TestMustFunc_PanicsOnError(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("MustFunc did not panic on non-nil error")
+		}
+	}()
+	_ = ae.MustFunc(func() (int, error) { return 0, errors.New("boom") })
+}

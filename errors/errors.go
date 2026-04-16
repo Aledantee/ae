@@ -14,10 +14,12 @@ func New(msg string) error {
 }
 
 // Join combines multiple errors into a single error.
-// If no errors are provided, it returns nil.
-// If only one error is provided, it returns that error directly.
-// For multiple errors, it creates a new error with a message containing
-// all error messages joined with semicolons and enclosed in square brackets.
+// Nil entries are filtered before the combination is decided:
+//   - If all inputs are nil (or the list is empty), returns nil.
+//   - If exactly one non-nil error is supplied, returns it directly.
+//   - Otherwise, creates an ae error whose message joins every sub-message
+//     with semicolons inside square brackets and whose causes are the
+//     surviving non-nil errors.
 func Join(errs ...error) error {
 	var filtered []error
 	for _, err := range errs {
@@ -26,7 +28,7 @@ func Join(errs ...error) error {
 		}
 	}
 
-	switch len(errs) {
+	switch len(filtered) {
 	case 0:
 		return nil
 	case 1:
