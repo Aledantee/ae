@@ -89,8 +89,10 @@ func NoPrintStacks() PrinterOption {
 	}
 }
 
-// PrintFrameFilters configures the Printer to filter stack frames based on the provided predicate functions.
-// Multiple calls to this option will result in a logical OR operation between the provided filters.
+// PrintFrameFilters appends one or more predicates that drop matching stack
+// frames from the rendered output. A frame is hidden when any filter returns
+// true, so multiple calls to PrintFrameFilters compose as a logical OR.
+// The built-in filter that hides ae/runtime internals is always installed first.
 func PrintFrameFilters(filters ...func(frame *StackFrame) bool) PrinterOption {
 	return func(p *Printer) {
 		p.frameFilters = append(p.frameFilters, filters...)
@@ -181,18 +183,42 @@ func NoPrintColors() PrinterOption {
 	}
 }
 
-// PrintOtel returns a PrinterOption that enables inclusion of OTEL information in the output.
-func PrintOtel() PrinterOption {
+// PrintTraceId enables inclusion of the OTel trace ID.
+func PrintTraceId() PrinterOption {
 	return func(p *Printer) {
 		p.traceId = true
 	}
 }
 
-// NoPrintOtel returns a PrinterOption that disables inclusion of OTEL information in the output.
-func NoPrintOtel() PrinterOption {
+// NoPrintTraceId disables inclusion of the OTel trace ID.
+func NoPrintTraceId() PrinterOption {
 	return func(p *Printer) {
 		p.traceId = false
 	}
+}
+
+// PrintSpanId enables inclusion of the OTel span ID.
+func PrintSpanId() PrinterOption {
+	return func(p *Printer) {
+		p.spanId = true
+	}
+}
+
+// NoPrintSpanId disables inclusion of the OTel span ID.
+func NoPrintSpanId() PrinterOption {
+	return func(p *Printer) {
+		p.spanId = false
+	}
+}
+
+// PrintOtel enables both the OTel trace ID and span ID.
+func PrintOtel() PrinterOption {
+	return withChained(PrintTraceId(), PrintSpanId())
+}
+
+// NoPrintOtel disables both the OTel trace ID and span ID.
+func NoPrintOtel() PrinterOption {
+	return withChained(NoPrintTraceId(), NoPrintSpanId())
 }
 
 // PrintTags returns a PrinterOption that enables inclusion of error tags in the output.
@@ -223,16 +249,20 @@ func NoPrintAttributes() PrinterOption {
 	}
 }
 
-// PrintVerbose returns a PrinterOption that enables all available output fields.
-// This includes user messages, hints, timestamps, codes, exit codes, colors,
-// trace IDs, span IDs, tags, attributes, causes, related errors, and stack traces.
+// PrintVerbose enables every printable field: user message, hint, timestamp,
+// code, exit code, trace ID, span ID, tags, attributes, causes, related errors,
+// and stack traces.
+//
+// Colors are not forced by PrintVerbose — they follow NewPrinter's TTY-aware default
+// (on when stdout is a terminal) unless the caller sets PrintColors()/NoPrintColors()
+// explicitly.
 func PrintVerbose() PrinterOption {
 	return withChained(
+		PrintUserMessage(),
 		PrintHint(),
 		PrintTimestamp(),
 		PrintCode(),
 		PrintExitCode(),
-		PrintColors(),
 		PrintOtel(),
 		PrintTags(),
 		PrintAttributes(),
@@ -242,9 +272,12 @@ func PrintVerbose() PrinterOption {
 	)
 }
 
-// PrintCompact returns a PrinterOption that enables a minimal set of commonly useful output fields.
+// PrintCompact enables a minimal, high-signal field set suitable for terse logs:
+// user message, hint, code, exit code, tags, attributes, causes, related.
+// Timestamps, trace IDs, and stack traces are omitted.
 func PrintCompact() PrinterOption {
 	return withChained(
+		PrintUserMessage(),
 		PrintHint(),
 		PrintCode(),
 		PrintExitCode(),

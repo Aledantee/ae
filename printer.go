@@ -1,8 +1,11 @@
 package ae
 
 import (
-	"fmt"
+	"io"
+	"os"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 // Printer provides functionality for formatting and printing errors with various options.
@@ -20,36 +23,47 @@ type Printer struct {
 	maxDepth int
 
 	// flags for error fields
-	userMsg      bool
-	hint         bool
-	timestamp    bool
-	code         bool
-	exitCode     bool
-	traceId      bool
-	spanId       bool
-	panId        bool
-	tags         bool
-	attributes   bool
-	causes       bool
-	related      bool
-	stacks       bool
+	userMsg    bool
+	hint       bool
+	timestamp  bool
+	code       bool
+	exitCode   bool
+	traceId    bool
+	spanId     bool
+	tags       bool
+	attributes bool
+	causes     bool
+	related    bool
+	stacks     bool
+
+	// frameFilters is a list of predicates. A stack frame is dropped from the
+	// rendered output when any filter returns true. The default set hides
+	// internal ae/runtime frames; callers extend the list via PrintFrameFilters.
 	frameFilters []func(frame *StackFrame) bool
 }
 
 // NewPrinter creates a new Printer with the given options.
-// By default, the printer will:
-//   - Include stack traces (stack = true)
-//   - Output in plain text format (json = false)
-//   - Include error causes (causes = true)
-//   - Traverse the error chain infinitely (maxDepth = -1)
 //
-// These defaults can be overridden using PrinterOption functions.
+// Defaults:
+//   - Colors enabled when stdout is a terminal, disabled otherwise (via fatih/color.NoColor).
+//   - Plain text output (json = false).
+//   - Verbose field set (PrintVerbose enables every field).
+//   - Infinite error-chain traversal (maxDepth = -1).
+//   - Indent = 2.
+//
+// Defaults can be overridden by passing options. Later options win over earlier ones,
+// so user-supplied options always override the built-in defaults.
 func NewPrinter(opts ...PrinterOption) *Printer {
+	colorsDefault := PrintColors()
+	if color.NoColor {
+		colorsDefault = NoPrintColors()
+	}
+
 	opts = append([]PrinterOption{
-		PrintColors(),
+		colorsDefault,
 		NoPrintJSON(),
 		PrintIndent(2),
-		PrintVerbose(), // expands to all fields
+		PrintVerbose(),
 		PrintDepthInfinite(),
 	}, opts...)
 
@@ -58,44 +72,52 @@ func NewPrinter(opts ...PrinterOption) *Printer {
 			hideInternalFrames,
 		},
 	}
-	for _, opt := range append(opts, PrintCauses()) {
+	for _, opt := range opts {
 		opt(p)
 	}
 
 	return p
 }
 
+// hideInternalFrames is the default frame filter applied by NewPrinter. It
+// drops frames whose function names belong to this library or Go's runtime
+// stack-capture helpers, keeping the printed trace focused on user code.
+func hideInternalFrames(frame *StackFrame) bool {
+	if frame == nil {
+		return true
+	}
+	return strings.HasPrefix(frame.Func, "go.aledante.io/ae") ||
+		strings.HasPrefix(frame.Func, "runtime/debug")
+}
+
+// Print is a shortcut for NewPrinter(opts...).Print(err).
 func Print(err error, opts ...PrinterOption) {
 	NewPrinter(opts...).Print(err)
 }
 
+// PrettyPrint is an alias for Print.
 func (p *Printer) PrettyPrint(err error) {
 	p.Print(err)
 }
 
-// Print writes the formatted error to standard output.
-// It uses the configured options (JSON format, stack traces, causes) to determine
-// how to format the error.
+// Print writes the formatted error to standard output followed by a single newline.
 func (p *Printer) Print(err error) {
-	fmt.Println(p.Prints(err))
+	p.Fprint(os.Stdout, err)
+}
+
+// Fprint writes the formatted error to w followed by a single newline.
+func (p *Printer) Fprint(w io.Writer, err error) {
+	io.WriteString(w, p.Prints(err))
+	io.WriteString(w, "\n")
 }
 
 // Prints returns a string representation of the error based on the printer's configuration.
 // If JSON output is enabled, it returns a JSON-formatted string.
 // Otherwise, it returns a plain text representation.
-// The output may include stack traces and error causes depending on the printer's configuration.
+// The returned string is NOT newline-terminated.
 func (p *Printer) Prints(err error) string {
 	if p.json {
 		return p.printsJson(err, 0)
-	} else {
-		return p.PrintErrorText(err, 0)
 	}
-}
-
-func hideInternalFrames(frame *StackFrame) bool {
-	if frame == nil {
-		return true
-	}
-
-	return strings.HasPrefix(frame.Func, "go.aledante.io/ae") || strings.HasPrefix(frame.Func, "runtime/debug")
+	return p.PrintErrorText(err, 0)
 }
