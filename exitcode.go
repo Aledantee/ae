@@ -8,9 +8,12 @@ type ErrorExitCode interface {
 }
 
 // ExitCode extracts the process exit code from an error.
-// If the error implements ErrorExitCode, returns its ExitCode().
-// Otherwise, recursively checks all causes and returns the highest exit code found.
-// Returns 0 if err is nil, otherwise defaults to 1.
+//
+//   - Returns 0 when err is nil.
+//   - If the error implements ErrorExitCode and that method returns a
+//     positive value, returns that value.
+//   - Otherwise recurses through causes and returns the highest exit code
+//     found, defaulting to 1 when no cause provides one.
 func ExitCode(err error) int {
 	if err == nil {
 		return 0

@@ -3,11 +3,12 @@
 // An [Ae] error carries more than a message: an optional user-facing copy
 // and resolution hint, a timestamp, a string error code, a process exit
 // code, OpenTelemetry trace and span IDs, a set of tags, a map of
-// attributes, underlying causes, related (non-cause) errors, and captured
-// goroutine stack traces. All of this metadata is accessible through
-// small, single-purpose interfaces (see [ErrorMessage], [ErrorCode], and
-// peers), so arbitrary error types that implement the relevant interface
-// cooperate with the package-level accessors.
+// attributes, underlying causes, related (non-cause) errors, captured
+// goroutine stack traces, and a recoverability flag. All of this metadata
+// is accessible through small, single-purpose interfaces (see
+// [ErrorMessage], [ErrorCode], [ErrorRecoverable], and peers), so
+// arbitrary error types that implement the relevant interface cooperate
+// with the package-level accessors.
 //
 // # Getting started
 //

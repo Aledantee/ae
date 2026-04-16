@@ -1,237 +1,258 @@
-# AE - **A**ledantee's **E**rror Handling Library
+# ae — Aledantee's error-handling library
 
-This is another error handling library for Go, but within my control.
+An opinionated error library for Go. Every error carries structured
+metadata (codes, tags, attributes, causes, related errors, stack traces,
+OpenTelemetry trace/span IDs, hints, user-facing copy) and renders
+through a dedicated text/JSON printer.
 
 ## Features
 
-- **Rich Error Metadata**: Timestamps, error codes, exit codes, distributed tracing IDs, tags, and custom attributes
-- **User-Friendly Messages**: Separate internal and user-facing error messages with resolution hints
-- **Fluent API**: Clean, chainable builder pattern for constructing errors
-- **Context Integration**: Built-in support for propagating error context through call chains
-- **Multiple Output Formats**: JSON and formatted text output with extensive customization options
+- **Rich metadata** — timestamps, error codes, exit codes, OTel trace/span IDs, tags, attributes, causes, related errors, captured goroutine stacks.
+- **User-facing copy** — separate internal message, end-user message, and resolution hint.
+- **Fluent builder** — chainable API that terminates with one of `Msg`, `Msgf`, or `UserMsg`.
+- **Context integration** — `NewC(ctx)` / `FromC(ctx, err)` inherit attributes, tags, and OTel IDs from `context.Context`.
+- **Recoverability** — `Builder.Fatal()` flags errors as non-recoverable; `IsRecoverable(err)` walks the chain.
+- **Print or JSON** — semantic colored text for humans (auto-off outside a TTY); structured JSON for machines.
+- **slog integration** — `*ae.Ae` implements `slog.LogValuer` for structured logging.
+- **Drop-in `errors` replacement** — `go.aledante.io/ae/errors` re-implements `New`, `Join`, `Is`, `As`, `Unwrap` on top of ae.
 
 ## Installation
 
 ```bash
-go get github.com/aledantee/ae
+go get go.aledante.io/ae
 ```
 
-## Quick Start
+## Quick start
 
-### Basic Error Creation
+### Bare message
 
 ```go
 package main
 
 import (
-    "errors"
-    "github.com/aledantee/ae"
+    "fmt"
+    "go.aledante.io/ae"
 )
 
 func main() {
-    // Create a simple error
-    err := ae.New().
-        Msg("failed to process request").
-        Code("PROCESS_FAILED").
-        ExitCode(1)
-    
+    err := ae.Msg("failed to process request")
     fmt.Println(err)
     // Output: failed to process request
 }
 ```
 
-### Error Chaining
+`ae.Msg` / `ae.Msgf` / `ae.Wrap` / `ae.Wrapf` are the shortcut entry points; use the builder for anything richer.
+
+### Wrapping a cause
 
 ```go
-// Chain errors with causes
 err := ae.New().
-    Cause(errors.New("database connection failed")).
-    Tag("database").
-    Tag("connection").
+    Cause(errors.New("invalid input")).
+    Tag("validation").
     Msg("failed to process request")
 
 fmt.Println(err)
-// Output: failed to process request: database connection failed {database, connection}
+// Output: failed to process request: invalid input
 ```
 
-### Stack Trace Capture
+`Error()` renders only the message chain. Tags, codes, hints, and other metadata surface through `ae.Print` or the extractor helpers.
+
+### Stack capture
 
 ```go
 func processData() error {
     return ae.New().
-        Stack().  // Capture current stack trace
+        Stack().                 // capture all goroutine stacks
+        Code("DATA_FAILED").
         Msg("data processing failed")
 }
 
-func main() {
-    err := processData()
-    
-    // Print with stack trace in JSON format
-    ae.Print(err, ae.WithJSON())
-}
+ae.Print(processData())          // text (default)
+ae.Print(processData(), ae.PrintJSON())
 ```
 
-### Context Integration
+### Context integration
 
 ```go
 func processWithContext(ctx context.Context, data string) error {
-    // Add an error builder to the context
-    ctx = ae.WithError(ctx, ae.New().Tag("processing"))
-    
-    // Later in the call chain...
-    return ae.FromContext(ctx).
-        Attr("data_length", len(data)).
+    // Attach attributes / tags / OTel IDs upstream…
+    ctx = ae.WithAttribute(ctx, "data_length", len(data))
+
+    // …and build an error that inherits them.
+    return ae.NewC(ctx).
+        Tag("processing").
         Msg("processing failed")
 }
 ```
 
-## Core Concepts
+Use `ae.WrapC(ctx, msg, err)` / `ae.FromC(ctx, err)` when wrapping an existing error.
 
-### Error Builder
+## Core concepts
 
-The `ae.Builder` provides a fluent interface for constructing rich errors:
+### Builder
+
+Everything non-terminal returns `Builder` for chaining. Terminal
+methods — `Msg`, `Msgf`, `UserMsg` — return `error`, so nothing can be
+chained after them.
 
 ```go
 err := ae.New().
-    UserMsg("Something went wrong. Please try again.").
     Hint("Check your network connection").
     Code("NETWORK_ERROR").
-    ExitCode(1).
-    Tag("network").
-    Tag("retryable").
+    ExitCode(5).
+    Tag("network").Tag("retryable").
     Attr("retry_count", 3).
     Attr("timeout", "30s").
-    Cause(underlyingError).
-    Related(relatedError1, relatedError2).
+    Cause(underlyingErr).
+    Related(sideEffectErr).
     Stack().
-    Now().  // Set current timestamp
-    Msg("internal error message") // Msg is the terminal operation converting the builder to an error
+    Now().
+    UserMsg(
+        "processing failed",                            // internal msg
+        "Something went wrong. Please try again.",      // end-user msg
+    )
 ```
 
-### Error Extraction
+Build-a-non-recoverable error: `ae.New().Fatal().Msg(...)` (shortcut for `.Recoverable(false)`).
 
-Extract specific information from any error:
+### Extractors
+
+Read metadata back out of **any** error. Each extractor honours its
+respective `ErrorXxx` interface, so custom error types participate.
 
 ```go
-// Extract basic information
-message := ae.Message(err) // ae.ErrorMessage interface
-userMessage := ae.UserMessage(err) // ae.ErrorUserMessage interface
-hint := ae.Hint(err) // ae.ErrorHint interface
-code := ae.Code(err) // ae.ErrorCode interface
-exitCode := ae.ExitCode(err) // ae.ErrorExitCode interface
-
-// Extract tracing information
-traceID := ae.TraceId(err) // ae.ErrorTraceId interface
-spanID := ae.SpanId(err) // ae.ErrorSpanId interface
-
-// Extract metadata
-tags := ae.Tags(err) // ErrorTags interface
-attributes := ae.Attributes(err) // ErrorAttributes interface
-
-// Extract error relationships
-causes := ae.Causes(err) // ErrorCauses interface
-related := ae.Related(err) // ErrorRelated interface
-stacks := ae.Stacks(err) // ErrorStacks interface
+ae.Message(err)       // ErrorMessage
+ae.UserMessage(err)   // ErrorUserMessage
+ae.Hint(err)          // ErrorHint
+ae.Code(err)          // ErrorCode
+ae.ExitCode(err)      // ErrorExitCode (recursive max over causes)
+ae.Timestamp(err)     // ErrorTimestamp
+ae.TraceId(err)       // ErrorTraceId
+ae.SpanId(err)        // ErrorSpanId
+ae.Tags(err)          // ErrorTags
+ae.Attributes(err)    // ErrorAttributes
+ae.Causes(err)        // ErrorCauses / Unwrap() []error / Unwrap() error / Cause() error
+ae.Related(err)       // ErrorRelated
+ae.Stacks(err)        // ErrorStacks
+ae.IsRecoverable(err) // ErrorRecoverable (recursive, default true)
 ```
 
-### Error Printing
-
-Customize error output with extensive options:
+### Printing
 
 ```go
-// Basic printing
-ae.Print(err)
+ae.Print(err)                              // text, default options
+ae.Print(err, ae.PrintJSON())              // JSON, indented
 
-// JSON output
-ae.Print(err, ae.WithJSON())
-
-// Custom formatting
-ae.Print(err, 
-    ae.WithJSON(),
-    ae.WithIndent(4),
-    ae.WithoutColors(),
-    ae.WithVerbose(),  // Include all fields
-    ae.WithInfiniteDepth(),  // Traverse all error chains
-    ae.WithStacks(),  // Include stack traces
-    ae.WithCauses(),  // Include error causes
-    ae.WithAttributes(),  // Include custom attributes
-)
+// Presets
+ae.Print(err, ae.PrintVerbose())           // every field on
+ae.Print(err, ae.PrintCompact())           // terse high-signal set
 ```
 
-### Context Propagation
+Layout of the default text output (colors applied when stdout is a TTY):
 
-Propagate error context through your call stack:
-
-```go
-func middleware(ctx context.Context, next func(context.Context) error) error {
-    // Add context to the request
-    ctx = ae.WithError(ctx, ae.New().Tag("middleware"))
-    
-    err := next(ctx)
-    if err != nil {
-        // Enrich the error with context
-        return ae.FromContext(ctx).
-            Cause(err).
-            Msg("middleware failed")
-    }
-    
-    return nil
-}
+```
+[ERROR] {NETWORK_ERROR/5} processing failed [network, retryable]
+  hint       Check your network connection
+  shown      Something went wrong. Please try again.
+  attrs      retry_count  3
+             timeout      30s
+  caused by  tcp reset by peer
 ```
 
-### Distributed Tracing
+Every printer option is toggled through the `Print*` / `NoPrint*`
+family:
 
-Integrate with OpenTelemetry for distributed tracing:
+| Option | Default | Effect |
+|---|---|---|
+| `PrintJSON` / `NoPrintJSON` | text | Switch output format. |
+| `PrintColors` / `NoPrintColors` | auto (TTY) | Force colors on/off. |
+| `PrintIndent(n)` | 2 | Spaces per indent level. |
+| `PrintDepth(n)` / `PrintDepthInfinite` | infinite | Cause-chain traversal depth. |
+| `PrintUserMessage` / `NoPrintUserMessage` | verbose | Include the `shown` row when distinct from msg. |
+| `PrintHint` / `NoPrintHint` | verbose | Include the `hint` row. |
+| `PrintTimestamp` / `NoPrintTimestamp` | verbose | Include the `time` row. |
+| `PrintCode` / `NoPrintCode` | verbose | Render `{CODE}` in the header. |
+| `PrintExitCode` / `NoPrintExitCode` | verbose | Render `/N` (hidden when the default 1). |
+| `PrintTags` / `NoPrintTags` | verbose | Include `[tag, tag]` in the header. |
+| `PrintAttributes` / `NoPrintAttributes` | verbose | Include the `attrs` block. |
+| `PrintCauses` / `NoPrintCauses` | verbose | Include the `caused by` block. |
+| `PrintRelated` / `NoPrintRelated` | verbose | Include the `related` block. |
+| `PrintStacks` / `NoPrintStacks` | verbose | Include the `stack` block. |
+| `PrintTraceId` / `PrintSpanId` / `PrintOtel` | verbose | OTel IDs (PrintOtel = both). |
+| `PrintFrameFilters(fn, …)` | ae+runtime hidden | Drop matching stack frames. |
+| `PrintVerbose` / `PrintCompact` | verbose | Presets. |
+
+### Distributed tracing
+
+`Builder.Context(ctx)` — called by `NewC` / `FromC` — automatically
+extracts OTel trace and span IDs from a span attached to the context:
 
 ```go
-import (
-    "go.opentelemetry.io/otel/trace"
-)
-
 func processRequest(ctx context.Context) error {
-    span := trace.SpanFromContext(ctx)
-    
-    return ae.New().
-        TraceId(span.SpanContext().TraceID().String()).
-        SpanId(span.SpanContext().SpanID().String()).
-        Context(ctx). // Also extracts trace and span IDs from the context.
+    return ae.NewC(ctx).          // trace + span IDs pulled from ctx
         Msg("request processing failed")
 }
 ```
 
-## Advanced Usage
+Explicit IDs can be attached with `.TraceId(...)` / `.SpanId(...)`; call
+them **after** `.Context(ctx)` if you need to override.
 
-### Error Enrichment
+### Structured logging (slog)
 
-Add related errors to existing errors:
+`*ae.Ae` implements `slog.LogValuer`, so errors log as a structured
+group when passed through `log/slog`:
 
 ```go
-originalErr := errors.New("original error")
-relatedErr1 := errors.New("related error 1")
-relatedErr2 := errors.New("related error 2")
-
-enrichedErr := ae.AddRelated(originalErr, relatedErr1, relatedErr2)
+slog.Error("request failed", slog.Any("err", err))
 ```
 
-### Custom Error Types
+Every populated field (msg, user_msg, hint, timestamp, code, exit_code,
+tags, attributes, causes, related) surfaces as a slog attribute;
+`recoverable` and `msg` are always present. Nested causes and related
+errors render as their own sub-groups.
 
-The library works with any error type through interface implementations:
+### errors sub-package
 
 ```go
-type CustomError struct {
-    message string
-    code    string
+import aeerrors "go.aledante.io/ae/errors"
+
+aeerrors.New("…")                    // returns an ae.Ae error
+aeerrors.Join(err1, nil, err2)       // nil-filtered, single passthrough, else bracketed
+aeerrors.Is(err, target)             // proxies stdlib errors.Is
+aeerrors.As(err, &target)            // proxies stdlib errors.As
+aeerrors.Unwrap(err)                 // proxies stdlib errors.Unwrap
+```
+
+## Custom error types
+
+Implement the relevant `ErrorXxx` interface — method names are prefixed
+with `Error` — and the extractor helpers will pick up values:
+
+```go
+type myErr struct {
+    msg  string
+    code string
 }
 
-func (e CustomError) Error() string { return e.message }
+func (e myErr) Error() string      { return e.msg }
+func (e myErr) ErrorMessage() string { return e.msg }
+func (e myErr) ErrorCode() string    { return e.code }
 
-// Implement the ae.ErrorMessage interface
-func (e CustomError) Message() string { return e.message }
-
-// Implement the ae.ErrorCode interface
-func (e CustomError) Code() string { return e.code }
-
-// Use with ae functions
-customErr := CustomError{"custom error", "CUSTOM_001"}
-code := ae.Code(customErr)  // Returns "CUSTOM_001"
+code := ae.Code(myErr{code: "CUSTOM_001"})   // -> "CUSTOM_001"
 ```
+
+## Examples
+
+Runnable examples live under `examples/`. A good starting set:
+
+- `examples/simple` — the minimum viable `Wrap` + `Print`.
+- `examples/print` — ~12 formatted scenarios covering every printer path.
+- `examples/chaining` — builder chaining with tags and causes.
+- `examples/stack` — stack capture.
+- `examples/context` — context-derived attributes.
+- `examples/extract` — every extractor helper, side-by-side.
+- `examples/errors` — drop-in `errors` package semantics.
+- `examples/slog` — slog handler integration.
+- `examples/exit` — using `ae.Exit` / `ae.PrintExit` with an exit code.
+
+Run any of them with, for example, `go run ./examples/print`.
